@@ -32,7 +32,7 @@ let apps = JSON.parse(localStorage.getItem('mja_v2_apps') || 'null') || [
 ]
 function saveApps() { localStorage.setItem('mja_v2_apps', JSON.stringify(apps)) }
 
-let currentUser  = { name:'Arjun Mehta', email:'arjun@email.com' }
+let currentUser  = { name:'vasudev', email:'vasudev@email.com' }
 let editingId    = null
 let currentView  = 'kanban'
 let currentTheme = localStorage.getItem('mja_theme') || 'dark'
@@ -84,7 +84,7 @@ function doSignUp() {
 }
 
 function demoLogin() {
-  currentUser = { name:'Arjun Mehta', email:'arjun@email.com' }
+  currentUser = { name:'vasudev', email:'arjun@email.com' }
   launchApp()
 }
 
@@ -1095,7 +1095,7 @@ tbody tr:last-child td{border-bottom:none}
     <div id="formSignup" style="display:none">
       <div class="form-group">
         <label class="form-label">Full Name</label>
-        <input class="form-input" id="suName" type="text" placeholder="Arjun Mehta" autocomplete="name">
+        <input class="form-input" id="suName" type="text" placeholder="vasudev" autocomplete="name">
       </div>
       <div class="form-group">
         <label class="form-label">Email Address</label>
@@ -1185,7 +1185,7 @@ tbody tr:last-child td{border-bottom:none}
     <div class="sidebar-user" onclick="showPage('settings')">
       <div class="user-avatar" id="sidebarAvatar">A</div>
       <div style="flex:1;min-width:0">
-        <div class="user-name" id="sidebarName">Arjun Mehta</div>
+        <div class="user-name" id="sidebarName">vasudev</div>
         <div class="user-email" id="sidebarEmail" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">arjun@email.com</div>
       </div>
       <span style="color:var(--text3);margin-left:6px">›</span>
@@ -1309,13 +1309,13 @@ tbody tr:last-child td{border-bottom:none}
     <div class="page" id="page-profile">
       <div class="page-body" style="max-width:660px">
         <div style="background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--accent);margin-bottom:16px">
-          🌐 Public URL: <strong>mja.app/profile/arjunm</strong> — visible to anyone with the link
+          🌐 Public URL: <strong>mja.app/profile/vasudev</strong> — visible to anyone with the link
         </div>
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:26px;margin-bottom:16px;display:flex;gap:20px;align-items:flex-start">
           <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:#fff;flex-shrink:0" id="pubAvatarLetter">A</div>
           <div style="flex:1">
-            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px" id="pubName">Arjun Mehta</div>
-            <div style="color:var(--accent);font-size:13px;margin-bottom:5px">@arjunm</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px" id="pubName">vasudev</div>
+            <div style="color:var(--accent);font-size:13px;margin-bottom:5px">@vasudev</div>
             <div style="font-size:13px;color:var(--text2);line-height:1.6">Senior Frontend Engineer · 4 YoE · React, TypeScript · Open to FAANG & product startups</div>
             <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--text2)">
               <span><strong style="color:var(--text);font-family:'Syne',sans-serif" id="pubAppCount">7</strong> Applications</span>
@@ -1357,7 +1357,7 @@ tbody tr:last-child td{border-bottom:none}
                 <div class="profile-section">
                   <div class="profile-avatar-lg" id="settingsAvatar">A</div>
                   <div>
-                    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px" id="settingsName">Arjun Mehta</div>
+                    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px" id="settingsName">vasudev</div>
                     <div style="font-size:12px;color:var(--text2)" id="settingsEmail">arjun@email.com</div>
                     <div style="font-size:12px;color:var(--accent);cursor:pointer;margin-top:5px" onclick="showToast('Photo upload coming soon!','success')">Change photo</div>
                   </div>
@@ -1449,7 +1449,7 @@ tbody tr:last-child td{border-bottom:none}
             <div class="settings-panel" id="spanel-privacy">
               <div class="settings-card">
                 <div class="settings-card-title">Public Profile</div>
-                <div class="settings-card-desc">Control what's visible at mja.app/profile/arjunm</div>
+                <div class="settings-card-desc">Control what's visible at mja.app/profile/vasudev</div>
                 <div class="settings-row"><div><div class="settings-row-label">Public Profile Active</div><div class="settings-row-desc">Allow others to view your profile</div></div><label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
                 <div class="settings-row"><div><div class="settings-row-label">Show Company Names</div><div class="settings-row-desc">Display company names publicly</div></div><label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
                 <div class="settings-row"><div><div class="settings-row-label">Show Salary Range</div><div class="settings-row-desc">Show salary figures on public profile</div></div><label class="toggle"><input type="checkbox"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
