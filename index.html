@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MJA — My Job Applications</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   MJA — My Job Applications  |  All JS in <head> to prevent errors
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── CONSTANTS ─────────────────────────────────────────────────── */
+const STATUS_COLOR={Applied:'#6c63ff',Screening:'#f7971e',Interview:'#38f9d7',Offer:'#43e97b',Rejected:'#ff6b6b',Ghosted:'#8888a8'}
+const STATUS_BG={Applied:'rgba(108,99,255,.13)',Screening:'rgba(247,151,30,.13)',Interview:'rgba(56,249,215,.13)',Offer:'rgba(67,233,123,.13)',Rejected:'rgba(255,107,107,.13)',Ghosted:'rgba(136,136,168,.13)'}
+const PRI_COLOR={High:'#ff6b6b',Medium:'#f7971e',Low:'#8888a8'}
+const PRI_BG={High:'rgba(255,107,107,.14)',Medium:'rgba(247,151,30,.14)',Low:'rgba(136,136,168,.14)'}
+const STATUSES=['Applied','Screening','Interview','Offer','Rejected','Ghosted']
+const SOURCES=['LinkedIn','Naukri','Indeed','Glassdoor','Company Website','Referral','AngelList','Twitter/X','Internshala','Wellfound','Campus','WhatsApp','Other']
+
+function uid(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36)}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fmtDate(d){if(!d)return'—';try{return new Date(d+'T12:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}catch(e){return d}}
+function fmtShort(d){if(!d)return'—';try{return new Date(d+'T12:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}catch(e){return d}}
+
+/* ── SAMPLE DATA ───────────────────────────────────────────────── */
+let apps = JSON.parse(localStorage.getItem('mja_v4_apps')||'null') || [
+  {id:uid(),company:'Google',role:'Senior Frontend Engineer',status:'Interview',priority:'High',date:'2025-03-01',salary:'₹35–45 LPA',location:'Bengaluru',worktype:'On-site',source:'LinkedIn',contact:'Priya Sharma',url:'',resume:'v3_sde2.pdf',skills:['React','TypeScript','GraphQL','Performance'],learn:'Study Chrome DevTools perf, review LLD, practice system design.',notes:'Round 1 cleared (DSA). Round 2 on Mar 18.',next:'Prepare LLD problems',nextdate:'2025-03-18',isPublic:true,rounds:[{n:1,type:'DSA',status:'Completed',platform:'HackerRank',notes:'Array + DP. Cleared.'},{n:2,type:'System Design',status:'Scheduled',platform:'Google Meet',notes:''}]},
+  {id:uid(),company:'Flipkart',role:'SDE-2 Frontend',status:'Screening',priority:'High',date:'2025-03-05',salary:'₹28–38 LPA',location:'Bengaluru',worktype:'Hybrid',source:'Naukri',contact:'Ravi Kumar',url:'',resume:'v3_sde2.pdf',skills:['React','Redux','Node.js','CSS'],learn:'Review Redux Toolkit, practice DP problems.',notes:'Applied via referral. Screen call Mar 22.',next:'Prepare for phone screen',nextdate:'2025-03-22',isPublic:false,rounds:[]},
+  {id:uid(),company:'Atlassian',role:'Frontend Engineer',status:'Applied',priority:'Medium',date:'2025-03-08',salary:'$90k–120k',location:'Remote',worktype:'Remote',source:'Company Website',contact:'',url:'https://atlassian.com/careers',resume:'v2_fe.pdf',skills:['React','TypeScript','Atlaskit'],learn:'Learn Atlaskit design system.',notes:'Applied via careers page.',next:'Wait for response',nextdate:'',isPublic:true,rounds:[]},
+  {id:uid(),company:'Razorpay',role:'UI Engineer',status:'Offer',priority:'High',date:'2025-02-20',salary:'₹30–40 LPA',location:'Bengaluru',worktype:'Hybrid',source:'Referral',contact:'Neha Joshi',url:'',resume:'v3_sde2.pdf',skills:['React','Vue','Payments','Webhooks'],learn:'Understand PCI DSS basics.',notes:'All rounds cleared! Offer received Mar 14.',next:'Decide by Mar 25',nextdate:'2025-03-25',isPublic:true,rounds:[{n:1,type:'DSA',status:'Completed',platform:'HackerRank',notes:'Cleared'},{n:2,type:'Technical',status:'Completed',platform:'Zoom',notes:'Cleared'},{n:3,type:'HR',status:'Completed',platform:'Phone',notes:'Offer extended!'}]},
+  {id:uid(),company:'Swiggy',role:'Senior React Developer',status:'Rejected',priority:'Medium',date:'2025-02-15',salary:'₹22–30 LPA',location:'Bengaluru',worktype:'Hybrid',source:'LinkedIn',contact:'',url:'',resume:'v2_fe.pdf',skills:['React','Node.js','Performance','PWA'],learn:'Performance optimization, PWA.',notes:'Rejected after R2. Weak on system design.',next:'Practice more LLD',nextdate:'',isPublic:false,rounds:[{n:1,type:'DSA',status:'Completed',platform:'HackerRank',notes:'Cleared'},{n:2,type:'System Design',status:'Completed',platform:'Zoom',notes:'Failed'}]},
+  {id:uid(),company:'Stripe',role:'Software Engineer – Frontend',status:'Applied',priority:'High',date:'2025-03-10',salary:'$130k–160k',location:'Remote (US)',worktype:'Remote',source:'Other: Wellfound',contact:'',url:'https://stripe.com/jobs',resume:'v3_sde2.pdf',skills:['TypeScript','React','APIs'],learn:'Stripe API docs, TypeScript generics.',notes:'Submitted. Long process expected.',next:'No action yet',nextdate:'',isPublic:true,rounds:[]},
+  {id:uid(),company:'Zomato',role:'Frontend Lead',status:'Ghosted',priority:'Low',date:'2025-02-01',salary:'₹25–35 LPA',location:'Gurugram',worktype:'Hybrid',source:'LinkedIn',contact:'HR Team',url:'',resume:'',skills:['React','GraphQL','Maps APIs'],learn:'',notes:'No response.',next:'Move on',nextdate:'',isPublic:false,rounds:[]},
+]
+function saveApps(){localStorage.setItem('mja_v4_apps',JSON.stringify(apps))}
+
+/* ── STATE ─────────────────────────────────────────────────────── */
+let currentUser={name:'Arjun Mehta',email:'arjun@email.com'}
+let editingId=null, currentView='kanban', currentTheme=localStorage.getItem('mja_theme')||'dark', activeStatusFilter=''
+
+/* ═══════════════════════════════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════════════════════════════ */
+function switchTab(tab){
+  document.getElementById('formSignin').style.display=tab==='signin'?'block':'none'
+  document.getElementById('formSignup').style.display=tab==='signup'?'block':'none'
+  document.getElementById('tabSignin').classList.toggle('active',tab==='signin')
+  document.getElementById('tabSignup').classList.toggle('active',tab==='signup')
+}
+function doSignIn(){
+  const email=document.getElementById('siEmail').value.trim()
+  const pass=document.getElementById('siPass').value
+  const err=document.getElementById('siErr')
+  if(!email||!pass){err.style.display='block';err.textContent='Please fill in all fields.';return}
+  err.style.display='none'
+  currentUser={name:email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,c=>c.toUpperCase()),email}
+  launchApp()
+}
+function doSignUp(){
+  const name=document.getElementById('suName').value.trim()
+  const email=document.getElementById('suEmail').value.trim()
+  const pass=document.getElementById('suPass').value
+  const pass2=document.getElementById('suPass2').value
+  const err=document.getElementById('suErr')
+  if(!email){err.style.display='block';err.textContent='Email is required.';return}
+  if(pass.length<8){err.style.display='block';err.textContent='Password must be at least 8 characters.';return}
+  if(pass!==pass2){err.style.display='block';err.textContent='Passwords do not match.';return}
+  err.style.display='none'
+  currentUser={name:name||email.split('@')[0],email}
+  launchApp()
+}
+function demoLogin(){currentUser={name:'Arjun Mehta',email:'arjun@email.com'};launchApp()}
+function launchApp(){
+  document.getElementById('loginScreen').style.display='none'
+  document.getElementById('appShell').style.display='grid'
+  updateUserUI();applyTheme(currentTheme);renderAll();showPage('dashboard')
+  const seen=localStorage.getItem('mja_tour_seen')
+  if(!seen){setTimeout(()=>startTour(),800)}
+}
+function doSignOut(){
+  document.getElementById('appShell').style.display='none'
+  document.getElementById('loginScreen').style.display='flex'
+  document.getElementById('siEmail').value=''
+  document.getElementById('siPass').value=''
+  showToast('Signed out successfully','success')
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   USER UI
+═══════════════════════════════════════════════════════════════════ */
+function updateUserUI(){
+  const initials=currentUser.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()
+  ;['sidebarAvatar','settingsAvatar','pubAvatarLetter'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=initials})
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v}
+  const val=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v}
+  set('sidebarName',currentUser.name);set('sidebarEmail',currentUser.email)
+  set('settingsName',currentUser.name);set('settingsEmail',currentUser.email);set('pubName',currentUser.name)
+  val('sNameInput',currentUser.name);val('sEmailInput',currentUser.email)
+  val('sUsernameInput',currentUser.email.split('@')[0])
+}
+function saveAccountSettings(){
+  const n=document.getElementById('sNameInput').value.trim()
+  const e=document.getElementById('sEmailInput').value.trim()
+  if(n)currentUser.name=n;if(e)currentUser.email=e
+  updateUserUI();showToast('Account updated!','success')
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   THEME
+═══════════════════════════════════════════════════════════════════ */
+function applyTheme(t){
+  currentTheme=t;localStorage.setItem('mja_theme',t)
+  let a=t
+  if(t==='system')a=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'
+  document.documentElement.setAttribute('data-theme',a)
+  const btn=document.getElementById('themeBtn')
+  if(btn)btn.innerHTML=a==='dark'
+    ?'<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>'
+    :'<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>'
+  document.querySelectorAll('.theme-option').forEach(el=>el.classList.remove('active'))
+  const opt=document.getElementById('theme-'+t);if(opt)opt.classList.add('active')
+}
+function setTheme(t){applyTheme(t);showToast('Theme: '+t.charAt(0).toUpperCase()+t.slice(1),'success')}
+function cycleTheme(){const o=['dark','light','system'];setTheme(o[(o.indexOf(currentTheme)+1)%o.length])}
+window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(currentTheme==='system')applyTheme('system')})
+
+/* ═══════════════════════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════════════════════ */
+const PAGE_TITLES={dashboard:'Dashboard',analytics:'Analytics',workspace:'Workspaces',profile:'Public Profile',settings:'Settings',about:'About MJA'}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
+  const pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active')
+  const nav=document.getElementById('nav-'+id);if(nav)nav.classList.add('active')
+  const ttl=document.getElementById('topbarTitle');if(ttl)ttl.textContent=PAGE_TITLES[id]||id
+  if(id==='analytics')renderAnalytics()
+  if(id==='profile')renderProfile()
+  document.getElementById('sidebar').classList.remove('mobile-open')
+}
+function toggleMobileSidebar(){document.getElementById('sidebar').classList.toggle('mobile-open')}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FILTER & SORT
+═══════════════════════════════════════════════════════════════════ */
+function getFiltered(){
+  const q=(document.getElementById('searchQ')?.value||'').toLowerCase()
+  const fs=document.getElementById('fStatus')?.value||activeStatusFilter||''
+  const fp=document.getElementById('fPriority')?.value||''
+  const sort=document.getElementById('fSort')?.value||'new'
+  let list=apps.filter(a=>{
+    if(fs&&a.status!==fs)return false
+    if(fp&&a.priority!==fp)return false
+    if(q&&![a.company,a.role,...(a.skills||[]),a.location||'',a.source||'',a.contact||''].join(' ').toLowerCase().includes(q))return false
+    return true
+  })
+  list.sort((a,b)=>{
+    if(sort==='new')return(new Date(b.date||0))-(new Date(a.date||0))
+    if(sort==='old')return(new Date(a.date||0))-(new Date(b.date||0))
+    if(sort==='co')return a.company.localeCompare(b.company)
+    if(sort==='st')return STATUSES.indexOf(a.status)-STATUSES.indexOf(b.status)
+    return 0
+  })
+  return list
+}
+function renderAll(){
+  renderSidebarStats();renderStatsBar();renderDashboard()
+  const nb=document.getElementById('navBadge');if(nb)nb.textContent=apps.length
+  const pac=document.getElementById('pubAppCount');if(pac)pac.textContent=apps.filter(a=>a.isPublic).length
+}
+
+/* ── SIDEBAR STATS ─────────────────────────────────────────────── */
+function renderSidebarStats(){
+  const el=document.getElementById('sidebarStats');if(!el)return
+  el.innerHTML=STATUSES.map(s=>{
+    const n=apps.filter(a=>a.status===s).length
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;border-radius:7px;font-size:12px;cursor:pointer;transition:background .12s"
+      onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'"
+      onclick="document.getElementById('fStatus').value='${s}';showPage('dashboard');renderDashboard()">
+      <span style="display:flex;align-items:center;gap:7px;color:var(--text2)">
+        <span style="width:6px;height:6px;border-radius:50%;background:${STATUS_COLOR[s]};flex-shrink:0"></span>${s}
+      </span>
+      <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:${STATUS_COLOR[s]}">${n}</span>
+    </div>`
+  }).join('')
+}
+
+/* ── STATS BAR ─────────────────────────────────────────────────── */
+function renderStatsBar(){
+  const bar=document.getElementById('statsBar');if(!bar)return
+  bar.innerHTML=`<div class="stat-pill" onclick="clearStatusFilter()"><span class="stat-n" style="color:var(--text)">${apps.length}</span><span>Total</span></div>`+
+    STATUSES.map(s=>{
+      const n=apps.filter(a=>a.status===s).length
+      return`<div class="stat-pill${activeStatusFilter===s?' active-filter':''}" onclick="toggleStatusFilter('${s}')"><div class="stat-dot" style="background:${STATUS_COLOR[s]}"></div><span class="stat-n" style="color:${STATUS_COLOR[s]}">${n}</span><span>${s}</span></div>`
+    }).join('')
+}
+function toggleStatusFilter(s){activeStatusFilter=activeStatusFilter===s?'':s;const el=document.getElementById('fStatus');if(el)el.value=activeStatusFilter;renderAll()}
+function clearStatusFilter(){activeStatusFilter='';const el=document.getElementById('fStatus');if(el)el.value='';renderAll()}
+
+/* ═══════════════════════════════════════════════════════════════════
+   KANBAN & TABLE
+═══════════════════════════════════════════════════════════════════ */
+function setView(v){
+  currentView=v
+  document.getElementById('kanbanView').style.display=v==='kanban'?'block':'none'
+  document.getElementById('tableView').style.display=v==='table'?'block':'none'
+  document.getElementById('vKanban').classList.toggle('active',v==='kanban')
+  document.getElementById('vTable').classList.toggle('active',v==='table')
+  renderDashboard()
+}
+function renderDashboard(){if(currentView==='kanban')renderKanban();else renderTable()}
+
+function renderKanban(){
+  const list=getFiltered()
+  const compact=document.getElementById('compactCards')?.checked
+  const showSal=document.getElementById('showSalary')?.checked!==false
+  const board=document.getElementById('kanbanView');if(!board)return
+  board.innerHTML='<div class="kanban-board">'+STATUSES.map(status=>{
+    const cols=list.filter(a=>a.status===status)
+    return`<div class="kanban-col">
+      <div class="col-header" style="border-left:3px solid ${STATUS_COLOR[status]}">
+        <span>${status}</span><span class="col-count">${cols.length}</span>
+      </div>
+      <div class="col-cards">${cols.length?cols.map(a=>cardHTML(a,compact,showSal)).join(''):'<div style="text-align:center;padding:20px 8px;color:var(--text3);font-size:12px">Empty</div>'}</div>
+    </div>`
+  }).join('')+'</div>'
+}
+function cardHTML(a,compact,showSal){
+  const tags=(a.skills||[]).slice(0,compact?2:3),extra=(a.skills||[]).length-tags.length
+  return`<div class="app-card card-${a.status.toLowerCase()}" onclick="openDetail('${a.id}')">
+    <div class="card-company">${esc(a.company)}</div>
+    <div class="card-role">${esc(a.role)}</div>
+    ${!compact&&showSal&&a.salary?`<div style="font-size:11px;color:var(--green);margin-bottom:6px">${esc(a.salary)}</div>`:''}
+    <div class="card-footer"><span class="card-date">${fmtShort(a.date)}</span><span class="pri-badge" style="background:${PRI_BG[a.priority]};color:${PRI_COLOR[a.priority]}">${a.priority}</span></div>
+    ${!compact&&tags.length?`<div class="card-tags">${tags.map(t=>`<span class="ctag">${esc(t)}</span>`).join('')}${extra>0?`<span class="ctag">+${extra}</span>`:''}</div>`:''}
+    ${!compact&&a.next?`<div class="card-next">→ ${esc(a.next)}</div>`:''}
+  </div>`
+}
+function renderTable(){
+  const list=getFiltered(),el=document.getElementById('tableView');if(!el)return
+  if(!list.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No applications found</div><div class="empty-desc">Try adjusting filters or add a new one.</div><button class="btn-primary" onclick="openAddModal()">+ Add Application</button></div>`;return}
+  el.innerHTML=`<div class="table-container"><table><thead><tr><th>Company</th><th>Role</th><th>Status</th><th>Priority</th><th>Applied</th><th>Salary</th><th>Location</th><th>Source</th><th>Next Action</th></tr></thead><tbody>${list.map(a=>`<tr onclick="openDetail('${a.id}')"><td class="tc">${esc(a.company)}</td><td style="color:var(--text2)">${esc(a.role)}</td><td><span class="sbadge" style="color:${STATUS_COLOR[a.status]};background:${STATUS_BG[a.status]}">${a.status}</span></td><td><span class="pri-badge" style="background:${PRI_BG[a.priority]};color:${PRI_COLOR[a.priority]}">${a.priority}</span></td><td style="color:var(--text2)">${fmtDate(a.date)}</td><td style="color:var(--green);font-size:12px">${esc(a.salary)||'—'}</td><td style="color:var(--text2)">${esc(a.location)||'—'}</td><td style="color:var(--text2)">${esc(a.source)||'—'}</td><td style="color:var(--orange);font-size:12px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(a.next)||'—'}</td></tr>`).join('')}</tbody></table></div>`
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SOURCE — OTHER TOGGLE
+═══════════════════════════════════════════════════════════════════ */
+function toggleOtherSource(val){
+  const wrap=document.getElementById('f_source_other_wrap'),inp=document.getElementById('f_source_other')
+  if(!wrap)return
+  if(val==='Other'){
+    wrap.style.display='block';wrap.style.opacity='0';wrap.style.transform='translateY(-6px)';wrap.style.transition='opacity .2s,transform .2s'
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{wrap.style.opacity='1';wrap.style.transform='translateY(0)'}))
+    setTimeout(()=>inp&&inp.focus(),80)
+  }else{
+    wrap.style.opacity='0';wrap.style.transform='translateY(-6px)'
+    setTimeout(()=>{wrap.style.display='none';if(inp)inp.value=''},200)
+  }
+}
+function getSourceValue(){
+  const sel=document.getElementById('f_source'),oth=document.getElementById('f_source_other')
+  if(!sel)return''
+  if(sel.value==='Other'){const v=oth?oth.value.trim():'';return v?'Other: '+v:'Other'}
+  return sel.value
+}
+function setSourceValue(source){
+  const sel=document.getElementById('f_source'),oth=document.getElementById('f_source_other'),wrap=document.getElementById('f_source_other_wrap')
+  if(!sel)return
+  if((source||'').startsWith('Other')){
+    sel.value='Other';if(oth)oth.value=source.startsWith('Other: ')?source.slice(7):'';if(wrap){wrap.style.display='block';wrap.style.opacity='1';wrap.style.transform='none'}
+  }else{
+    sel.value=SOURCES.includes(source)?source:'LinkedIn';if(oth)oth.value='';if(wrap)wrap.style.display='none'
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADD / EDIT MODAL
+═══════════════════════════════════════════════════════════════════ */
+function openAddModal(){
+  editingId=null
+  document.getElementById('modalTitle').textContent='Add Application'
+  document.getElementById('modalSub').textContent='Fill in details or use Smart Fill ✨'
+  document.getElementById('deleteBtn').style.display='none'
+  const today=new Date().toISOString().split('T')[0]
+  const fields={f_company:'',f_role:'',f_status:'Applied',f_priority:'Medium',f_date:today,f_salary:'',f_location:'',f_worktype:'Remote',f_url:'',f_contact:'',f_resume:'',f_skills:'',f_learn:'',f_notes:'',f_next:'',f_nextdate:''}
+  Object.entries(fields).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v})
+  document.getElementById('f_public').checked=false
+  setSourceValue('LinkedIn');openModal()
+}
+function openEditModal(id){
+  const a=apps.find(x=>x.id===id);if(!a)return
+  editingId=id
+  document.getElementById('modalTitle').textContent='Edit Application'
+  document.getElementById('modalSub').textContent=`${a.company} — ${a.role}`
+  document.getElementById('deleteBtn').style.display='block'
+  const map={f_company:'company',f_role:'role',f_status:'status',f_priority:'priority',f_date:'date',f_salary:'salary',f_location:'location',f_worktype:'worktype',f_url:'url',f_contact:'contact',f_resume:'resume',f_learn:'learn',f_notes:'notes',f_next:'next',f_nextdate:'nextdate'}
+  Object.entries(map).forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.value=a[k]||''})
+  document.getElementById('f_skills').value=(a.skills||[]).join(', ')
+  document.getElementById('f_public').checked=!!a.isPublic
+  setSourceValue(a.source);openModal()
+}
+function saveApp(){
+  const co=document.getElementById('f_company').value.trim(),ro=document.getElementById('f_role').value.trim()
+  if(!co||!ro){showToast('Company and Role are required!','error');return}
+  const data={
+    company:co,role:ro,status:document.getElementById('f_status').value,priority:document.getElementById('f_priority').value,
+    date:document.getElementById('f_date').value,salary:document.getElementById('f_salary').value.trim(),
+    location:document.getElementById('f_location').value.trim(),worktype:document.getElementById('f_worktype').value,
+    source:getSourceValue(),url:document.getElementById('f_url').value.trim(),contact:document.getElementById('f_contact').value.trim(),
+    resume:document.getElementById('f_resume').value.trim(),skills:document.getElementById('f_skills').value.split(',').map(s=>s.trim()).filter(Boolean),
+    learn:document.getElementById('f_learn').value.trim(),notes:document.getElementById('f_notes').value.trim(),
+    next:document.getElementById('f_next').value.trim(),nextdate:document.getElementById('f_nextdate').value,
+    isPublic:document.getElementById('f_public').checked
+  }
+  if(editingId){
+    const idx=apps.findIndex(a=>a.id===editingId);if(idx>-1)apps[idx]={...apps[idx],...data}
+    showToast('Application updated!','success')
+  }else{
+    apps.unshift({id:uid(),rounds:[],...data});showToast('Application added!','success')
+  }
+  saveApps();closeModal();renderAll()
+}
+function deleteApp(){
+  if(!confirm('Delete this application permanently?'))return
+  apps=apps.filter(a=>a.id!==editingId)
+  saveApps();closeModal();renderAll();showToast('Application deleted','success')
+}
+function openModal(){document.getElementById('appModal').classList.add('open')}
+function closeModal(){document.getElementById('appModal').classList.remove('open')}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CLEAR ALL — dedicated button with confirmation
+═══════════════════════════════════════════════════════════════════ */
+function confirmClearAll(){
+  if(!apps.length){showToast('No applications to delete.','error');return}
+  const overlay=document.createElement('div')
+  overlay.className='modal-overlay';overlay.style.zIndex='200'
+  overlay.innerHTML=`<div class="modal" style="max-width:400px;text-align:center;padding:36px 32px">
+    <div style="width:64px;height:64px;border-radius:50%;background:rgba(255,107,107,.12);border:2px solid rgba(255,107,107,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:28px">🗑️</div>
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;margin-bottom:8px">Delete All Applications?</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:6px">
+      This will permanently erase all <strong style="color:var(--text)">${apps.length} application${apps.length!==1?'s':''}</strong> from your account.
+    </div>
+    <div style="font-size:12px;color:var(--red);margin-bottom:28px">⚠️ This cannot be undone.</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-ghost" style="flex:1;padding:11px" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+      <button style="flex:1;padding:11px;border-radius:9px;background:var(--red);color:#fff;border:none;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'" onclick="doDeleteAll(this)">Delete All</button>
+    </div>
+  </div>`
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()})
+  document.body.appendChild(overlay)
+  setTimeout(()=>overlay.classList.add('open'),10)
+}
+function doDeleteAll(btn){
+  apps=[];saveApps();renderAll()
+  btn.closest('.modal-overlay').remove()
+  showToast('All applications cleared','success')
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SMART FILL — paste JD or upload PDF
+═══════════════════════════════════════════════════════════════════ */
+function openSmartFill(){
+  const overlay=document.createElement('div')
+  overlay.id='smartFillOv';overlay.className='modal-overlay';overlay.style.zIndex='170'
+  overlay.innerHTML=`<div class="modal" style="max-width:660px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">✨ Smart Job Fill</div>
+        <div class="modal-sub">Paste a job description or upload a PDF — fields fill automatically</div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('smartFillOv').remove()">✕</button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="sf-tab active" id="sfTabPaste" onclick="sfSwitch('paste')">📋 Paste Text</button>
+      <button class="sf-tab" id="sfTabPDF" onclick="sfSwitch('pdf')">📄 Upload PDF / File</button>
+    </div>
+
+    <div id="sfPastePanel">
+      <textarea id="sfJDText" class="sf-textarea" placeholder="Paste the full job description here…
+
+Example:
+Senior Frontend Engineer at Razorpay
+Location: Bengaluru, India (Hybrid)
+Salary: ₹30–40 LPA
+Skills required: React, TypeScript, Payments, Webhooks
+
+We are looking for a Senior Frontend Engineer with 4+ years of experience in React...
+
+Contact: hr@razorpay.com
+Apply at: https://razorpay.com/careers/sfe-123"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <span style="font-size:11px;color:var(--text3)">Tip: more details = better extraction</span>
+        <button class="btn-ghost" style="font-size:12px;padding:5px 10px" onclick="document.getElementById('sfJDText').value=''">Clear</button>
+      </div>
+    </div>
+
+    <div id="sfPDFPanel" style="display:none">
+      <div id="sfDropZone" class="sf-dropzone"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="sfHandleDrop(event)"
+        onclick="document.getElementById('sfFileInput').click()">
+        <div style="font-size:42px;margin-bottom:12px">📄</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px">Drop file here or click to browse</div>
+        <div style="font-size:12px;color:var(--text3)">Supports .txt, .docx — for PDF, copy-paste text for best results</div>
+        <input type="file" id="sfFileInput" accept=".txt,.pdf,.docx" style="display:none" onchange="sfHandleFile(this)">
+      </div>
+      <div id="sfFileStatus" style="display:none;margin-top:10px;font-size:13px;padding:10px 14px;background:var(--bg3);border-radius:8px"></div>
+    </div>
+
+    <div id="sfError" style="display:none;font-size:12px;color:var(--red);padding:9px 13px;background:rgba(255,107,107,.08);border-radius:8px;margin-top:10px;border:1px solid rgba(255,107,107,.2)"></div>
+
+    <div class="modal-footer" style="margin-top:14px">
+      <button class="btn-ghost" onclick="document.getElementById('smartFillOv').remove()">Cancel</button>
+      <button class="btn-primary" id="sfExtractBtn" onclick="sfExtract()">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+        Extract &amp; Fill Fields
+      </button>
+    </div>
+  </div>`
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()})
+  document.body.appendChild(overlay)
+  setTimeout(()=>overlay.classList.add('open'),10)
+}
+
+function sfSwitch(tab){
+  document.getElementById('sfPastePanel').style.display=tab==='paste'?'block':'none'
+  document.getElementById('sfPDFPanel').style.display=tab==='pdf'?'block':'none'
+  document.getElementById('sfTabPaste').classList.toggle('active',tab==='paste')
+  document.getElementById('sfTabPDF').classList.toggle('active',tab==='pdf')
+}
+
+function sfHandleDrop(e){
+  e.preventDefault()
+  document.getElementById('sfDropZone').classList.remove('drag-over')
+  const file=e.dataTransfer.files[0];if(file)sfReadFile(file)
+}
+function sfHandleFile(inp){if(inp.files[0])sfReadFile(inp.files[0])}
+function sfReadFile(file){
+  const st=document.getElementById('sfFileStatus')
+  st.style.display='block';st.innerHTML=`<span style="color:var(--accent)">⏳ Reading ${esc(file.name)}…</span>`
+  const reader=new FileReader()
+  reader.onload=e=>{
+    const text=typeof e.target.result==='string'?e.target.result:''
+    if(text.trim()){
+      document.getElementById('sfJDText').value=text
+      st.innerHTML=`<span style="color:var(--green)">✓ ${esc(file.name)} loaded — switch to Paste tab to review &amp; extract</span>`
+      sfSwitch('paste')
+    }else{
+      st.innerHTML=`<span style="color:var(--orange)">📄 PDF binary detected. Please copy-paste the job description text instead for best results.</span>`
+    }
+  }
+  reader.onerror=()=>{st.innerHTML='<span style="color:var(--red)">✗ Could not read file. Try copy-pasting the text.</span>'}
+  reader.readAsText(file)
+}
+
+function sfExtract(){
+  const text=(document.getElementById('sfJDText')?.value||'').trim()
+  const errEl=document.getElementById('sfError')
+  if(!text){errEl.style.display='block';errEl.textContent='Please paste a job description first.';return}
+  errEl.style.display='none'
+  const btn=document.getElementById('sfExtractBtn')
+  btn.disabled=true;btn.innerHTML='⏳ Extracting…'
+
+  setTimeout(()=>{
+    try{
+      const parsed=sfParseJD(text)
+      document.getElementById('smartFillOv').remove()
+      openAddModal()
+      setTimeout(()=>{
+        if(parsed.company)document.getElementById('f_company').value=parsed.company
+        if(parsed.role)document.getElementById('f_role').value=parsed.role
+        if(parsed.location)document.getElementById('f_location').value=parsed.location
+        if(parsed.salary)document.getElementById('f_salary').value=parsed.salary
+        if(parsed.skills)document.getElementById('f_skills').value=parsed.skills
+        if(parsed.contact)document.getElementById('f_contact').value=parsed.contact
+        if(parsed.url)document.getElementById('f_url').value=parsed.url
+        if(parsed.worktype)document.getElementById('f_worktype').value=parsed.worktype
+        setSourceValue(parsed.source||'Other')
+        const filled=[parsed.company,parsed.role,parsed.location,parsed.salary,parsed.skills,parsed.contact,parsed.url].filter(Boolean).length
+        showToast(filled>0?`✨ Extracted ${filled} fields! Review and save.`:'Could not extract details — try a more complete JD.',filled>0?'success':'error')
+      },150)
+    }catch(e){
+      errEl.style.display='block';errEl.textContent='Extraction failed. Try a different job description format.'
+      btn.disabled=false;btn.innerHTML='✨ Extract &amp; Fill Fields'
+    }
+  },700)
+}
+
+function sfParseJD(text){
+  const r={}
+  const get=(pats,def='')=>{for(const p of pats){const m=text.match(p);if(m)return(m[1]||m[0]).trim().replace(/[,.:;|–\-]+$/,'').trim()};return def}
+
+  r.company=get([
+    /(?:company|employer|organisation|organization)[:\s–-]+([A-Za-z0-9 &.,'\-]{2,45})/i,
+    /(?:about|join|at)\s+([A-Z][A-Za-z0-9 &.\-]{2,40})(?:\s|,|\n|!)/,
+    /^([A-Z][A-Za-z0-9 &.\-]{2,35})\s+(?:is hiring|is looking|hiring)/m,
+  ])
+
+  r.role=get([
+    /(?:position|role|title|job title|opening for|we are hiring)[:\s–-]+([^\n,|]{4,65})/i,
+    /(?:hiring|seeking|looking for|opportunity for)\s+(?:a\s+|an\s+)?([^\n,|]{4,65})/i,
+    /^([A-Z][A-Za-z0-9 \/\-–+]{5,55})$/m,
+  ])
+  if(r.role)r.role=r.role.replace(/^(a\s+|an\s+)/i,'').replace(/\s+at\s+.*/i,'').trim()
+
+  r.location=get([
+    /(?:location|office|based in|work from|job location)[:\s–-]+([^\n,|]{3,55})/i,
+    /\b(Remote|Hybrid|On-site|Bengaluru|Bangalore|Mumbai|Hyderabad|Delhi|Chennai|Pune|Gurugram|Gurgaon|Noida|New York|San Francisco|London|Berlin|Singapore|Toronto|Sydney)\b/i,
+  ])
+
+  r.salary=get([
+    /(?:salary|compensation|ctc|pay|package|lpa)\s*[:\s–-]+([^\n]{3,50})/i,
+    /([$₹€£]\s*[\d,]+(?:\s*[kK]|LPA)?(?:\s*[-–to]+\s*[$₹€£]?\s*[\d,]+(?:\s*[kK]|LPA)?)?)/i,
+    /([\d]+\s*[-–]\s*[\d]+\s*(?:LPA|lpa|lakhs|K|k))/,
+  ])
+
+  const wt=text.match(/\b(Remote|Hybrid|On-?site|In-?person|Work from home|WFH)\b/i)
+  if(wt){const v=wt[1].toLowerCase();r.worktype=v.includes('remote')||v.includes('wfh')?'Remote':v.includes('hybrid')?'Hybrid':'On-site'}
+
+  const SKILL_LIST=['React','Vue','Angular','Next.js','Nuxt','Svelte','TypeScript','JavaScript','ES6','Node.js',
+    'Express','NestJS','Python','Django','FastAPI','Flask','Java','Spring','Go','Rust','PHP','Laravel',
+    'GraphQL','REST','gRPC','PostgreSQL','MySQL','MongoDB','Redis','Elasticsearch','AWS','GCP','Azure',
+    'Docker','Kubernetes','CI/CD','GitHub','Git','Terraform','Linux','HTML','CSS','Tailwind','Sass',
+    'Redux','MobX','Zustand','Webpack','Vite','Jest','Cypress','Playwright','Figma','System Design','DSA',
+    'Machine Learning','TensorFlow','PyTorch','SQL','NoSQL','Kafka','Microservices','React Native','Flutter']
+  const skills=SKILL_LIST.filter(s=>new RegExp('\\b'+s.replace(/[.+]/g,'\\$&')+'\\b','i').test(text))
+  if(skills.length)r.skills=skills.join(', ')
+
+  const email=text.match(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i)
+  if(email)r.contact=email[0]
+
+  const url=text.match(/https?:\/\/[^\s"'<>]+/i)
+  if(url)r.url=url[0].replace(/[.,)>]+$/,'')
+
+  if(/linkedin/i.test(text))r.source='LinkedIn'
+  else if(/naukri/i.test(text))r.source='Naukri'
+  else if(/wellfound|angellist/i.test(text))r.source='AngelList'
+  else if(/indeed/i.test(text))r.source='Indeed'
+  else if(/glassdoor/i.test(text))r.source='Glassdoor'
+  else r.source='Other'
+
+  return r
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DETAIL VIEW
+═══════════════════════════════════════════════════════════════════ */
+function openDetail(id){
+  const a=apps.find(x=>x.id===id);if(!a)return
+  const overlay=document.createElement('div')
+  overlay.className='modal-overlay';overlay.style.zIndex='160'
+  const roundsHTML=(a.rounds||[]).length?`<div class="detail-section-lbl">📅 Interview Rounds</div>${(a.rounds||[]).map(r=>`
+    <div class="round-row">
+      <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:rgba(108,99,255,.12);color:var(--accent)">R${r.n}</span>
+      <span style="font-weight:600;font-size:13px">${esc(r.type)}</span>
+      <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;color:${r.status==='Completed'?'#43e97b':r.status==='Scheduled'?'#38f9d7':'#f7971e'};background:${r.status==='Completed'?'rgba(67,233,123,.12)':r.status==='Scheduled'?'rgba(56,249,215,.12)':'rgba(247,151,30,.12)'}">${r.status}</span>
+      ${r.platform?`<span style="font-size:11px;color:var(--text3)">${esc(r.platform)}</span>`:''}
+      ${r.notes?`<span style="font-size:11px;color:var(--text2);flex:1">${esc(r.notes)}</span>`:''}
+    </div>`).join('')}`:'';
+  overlay.innerHTML=`<div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div><div class="modal-title">${esc(a.company)}</div><div class="modal-sub">${esc(a.role)}</div></div>
+      <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+    </div>
+    <div class="detail-chips">
+      <span class="sbadge" style="color:${STATUS_COLOR[a.status]};background:${STATUS_BG[a.status]}">${a.status}</span>
+      <span class="pri-badge" style="background:${PRI_BG[a.priority]};color:${PRI_COLOR[a.priority]}">${a.priority} Priority</span>
+      ${a.worktype?`<span style="font-size:11px;padding:3px 10px;border-radius:100px;background:var(--bg4);color:var(--text2)">🏢 ${esc(a.worktype)}</span>`:''}
+      ${a.location?`<span style="font-size:11px;color:var(--text2)">📍 ${esc(a.location)}</span>`:''}
+      ${a.salary?`<span style="font-size:12px;color:var(--green)">💰 ${esc(a.salary)}</span>`:''}
+    </div>
+    <div class="detail-grid">
+      <div><div class="detail-lbl">Applied Date</div><div class="detail-val">${fmtDate(a.date)}</div></div>
+      <div><div class="detail-lbl">Source</div><div class="detail-val">${esc(a.source)||'—'}</div></div>
+      <div><div class="detail-lbl">Contact</div><div class="detail-val">${esc(a.contact)||'—'}</div></div>
+      <div><div class="detail-lbl">Resume</div><div class="detail-val">${esc(a.resume)||'—'}</div></div>
+      ${a.url?`<div style="grid-column:1/-1"><div class="detail-lbl">Job URL</div><div class="detail-val"><a href="${esc(a.url)}" target="_blank" style="color:var(--accent)">${esc(a.url)} ↗</a></div></div>`:''}
+    </div>
+    ${(a.skills||[]).length?`<div class="detail-section-lbl">🛠 Skills</div><div class="tag-wrap">${(a.skills||[]).map(s=>`<span class="dtag">${esc(s)}</span>`).join('')}</div>`:''}
+    ${a.learn?`<div class="detail-section-lbl">📚 What to Learn</div><div class="detail-box">${esc(a.learn)}</div>`:''}
+    ${a.notes?`<div class="detail-section-lbl">🗒 Notes</div><div class="detail-box">${esc(a.notes)}</div>`:''}
+    ${a.next?`<div class="detail-section-lbl">⚡ Next Action</div><div class="detail-action-box">${esc(a.next)}${a.nextdate?`<span style="color:var(--text3);margin-left:10px;font-size:11px">by ${fmtShort(a.nextdate)}</span>`:''}</div>`:''}
+    ${roundsHTML}
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="this.closest('.modal-overlay').remove()">Close</button>
+      <button class="btn-primary" onclick="this.closest('.modal-overlay').remove();openEditModal('${a.id}')">Edit Application</button>
+    </div>
+  </div>`
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()})
+  document.body.appendChild(overlay)
+  setTimeout(()=>overlay.classList.add('open'),10)
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ANALYTICS
+═══════════════════════════════════════════════════════════════════ */
+function renderAnalytics(){
+  const total=apps.length,responded=apps.filter(a=>!['Applied','Ghosted'].includes(a.status)).length
+  const offers=apps.filter(a=>a.status==='Offer').length,interviews=apps.filter(a=>a.status==='Interview').length
+  const metrics=document.getElementById('analyticsMetrics')
+  if(metrics)metrics.innerHTML=[
+    {n:total,l:'Total Applications',c:'var(--accent)',d:'All time'},
+    {n:total?Math.round(responded/total*100)+'%':'0%',l:'Response Rate',c:'var(--teal)',d:`${responded} of ${total} responded`},
+    {n:offers,l:'Active Offers',c:'var(--green)',d:'Awaiting decision'},
+    {n:interviews,l:'In Interview',c:'var(--orange)',d:'Currently in process'}
+  ].map(m=>`<div class="metric-card"><div class="metric-n" style="color:${m.c}">${m.n}</div><div class="metric-l">${m.l}</div><div class="metric-delta">${m.d}</div></div>`).join('')
+  const charts=document.getElementById('analyticsCharts');if(!charts)return
+  const byStatus=STATUSES.map(s=>({s,n:apps.filter(a=>a.status===s).length}))
+  const maxS=Math.max(...byStatus.map(x=>x.n),1)
+  const bySrc=['LinkedIn','Naukri','Referral','Company Website','AngelList','Other'].map(s=>({s,n:apps.filter(a=>(a.source||'').startsWith(s==='Other'?'Other':s)).length})).sort((a,b)=>b.n-a.n)
+  const maxSrc=Math.max(...bySrc.map(x=>x.n),1)
+  charts.innerHTML=`
+    <div class="chart-card"><div class="chart-title">By Status</div>${byStatus.map(({s,n})=>`<div class="bar-row"><div class="bar-lbl" style="color:${STATUS_COLOR[s]}">${s}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxS*100)}%;background:${STATUS_COLOR[s]}"></div></div><div class="bar-n">${n}</div></div>`).join('')}</div>
+    <div class="chart-card"><div class="chart-title">Top Sources</div>${bySrc.map(({s,n})=>`<div class="bar-row"><div class="bar-lbl">${s}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxSrc*100)}%;background:var(--accent)"></div></div><div class="bar-n">${n}</div></div>`).join('')}</div>`
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PUBLIC PROFILE & SETTINGS
+═══════════════════════════════════════════════════════════════════ */
+function renderProfile(){
+  const pubApps=apps.filter(a=>a.isPublic)
+  const allSkills=[...new Set(apps.flatMap(a=>a.skills||[]))]
+  const skillsEl=document.getElementById('pubSkills'),appsEl=document.getElementById('pubApps')
+  if(skillsEl)skillsEl.innerHTML=allSkills.map(s=>`<span style="font-size:12px;padding:5px 12px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:8px">${esc(s)}</span>`).join('')
+  if(appsEl)appsEl.innerHTML=pubApps.length?pubApps.map(a=>`<div style="background:var(--bg2);border:1px solid var(--border);border-left:3px solid ${STATUS_COLOR[a.status]};border-radius:11px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:9px"><div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">${esc(a.company)}</div><div style="font-size:12px;color:var(--text2)">${esc(a.role)}</div>${a.location?`<div style="font-size:11px;color:var(--text3)">📍 ${esc(a.location)}</div>`:''}</div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${(a.skills||[]).slice(0,3).map(s=>`<span style="font-size:10px;padding:2px 8px;background:var(--bg4);color:var(--text2);border-radius:4px">${esc(s)}</span>`).join('')}<span class="sbadge" style="color:${STATUS_COLOR[a.status]};background:${STATUS_BG[a.status]}">${a.status}</span></div></div>`).join(''):`<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px">No public applications yet. Check "Show on public profile" when adding apps.</div>`
+}
+function showSettingsPanel(id){
+  document.querySelectorAll('.settings-panel').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.settings-tab').forEach(t=>t.classList.remove('active'))
+  const panel=document.getElementById('spanel-'+id);if(panel)panel.classList.add('active')
+  const tab=document.getElementById('stab-'+id);if(tab)tab.classList.add('active')
+}
+
+/* ── EXPORT ─────────────────────────────────────────────────────── */
+function exportCSV(){
+  const headers=['Company','Role','Status','Priority','Applied','Salary','Location','Work Type','Source','Contact','Skills','Learn','Notes','Next Action','Resume','Public']
+  const esc2=v=>{const s=Array.isArray(v)?v.join('; '):String(v||'');return(s.includes(',')||s.includes('"')||s.includes('\n'))?`"${s.replace(/"/g,'""')}"`:(s)}
+  const rows=apps.map(a=>[a.company,a.role,a.status,a.priority,a.date,a.salary,a.location,a.worktype,a.source,a.contact,(a.skills||[]),a.learn,a.notes,a.next,a.resume,a.isPublic?'Yes':'No'].map(esc2).join(','))
+  const csv=[headers.join(','),...rows].join('\n')
+  const blob=new Blob([csv],{type:'text/csv'})
+  const url=URL.createObjectURL(blob)
+  const link=document.createElement('a')
+  link.href=url;link.download=`mja-applications-${new Date().toISOString().split('T')[0]}.csv`;link.click();URL.revokeObjectURL(url)
+  showToast('CSV exported!','success')
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GUIDED TOUR — 10-step interactive walkthrough
+═══════════════════════════════════════════════════════════════════ */
+const TOUR=[
+  {title:'👋 Welcome to MJA!',desc:'Your personal job application command centre. Let\'s take a quick tour — <strong>10 steps, under a minute!</strong> You can skip at any time.',el:null,nav:null},
+  {title:'📋 Dashboard',desc:'Your main board. See all applications as a <strong>Kanban board</strong> (columns by status) or switch to a dense <strong>Table view</strong>. Filter and sort instantly.',el:'nav-dashboard',nav:'dashboard'},
+  {title:'+ Add Application',desc:'Click <strong>+ Add Application</strong> in the top-right corner to manually log a new job — company, role, salary, skills, interview notes, and more.',el:'topAddBtn',nav:'dashboard'},
+  {title:'✨ Smart Job Fill',desc:'Click <strong>Smart Fill</strong> in the toolbar to paste any job description. MJA auto-extracts <em>company, role, location, salary, and skills</em> — no typing needed!',el:'sfToolBtn',nav:'dashboard'},
+  {title:'🗑️ Clear All',desc:'The <strong>Clear All</strong> button (trash icon in toolbar) deletes every application at once. A confirmation dialog protects against accidents.',el:'clearAllBtn',nav:'dashboard'},
+  {title:'📊 Stats Bar',desc:'Click any status pill — <em>Applied, Interview, Offer</em> etc. — to instantly filter your board to just that stage.',el:'statsBar',nav:'dashboard'},
+  {title:'📈 Analytics',desc:'See your <strong>response rate</strong>, active offers, and breakdowns by status and source — so you know where to focus.',el:'nav-analytics',nav:'analytics'},
+  {title:'👥 Workspaces',desc:'Create or join a <strong>shared workspace</strong> with friends or cohort members to track applications together.',el:'nav-workspace',nav:'workspace'},
+  {title:'🌐 Public Profile',desc:'Get a shareable link like <em>mja.app/profile/you</em> to show recruiters your active job search.',el:'nav-profile',nav:'profile'},
+  {title:'🚀 You\'re all set!',desc:'Start by clicking <strong>+ Add Application</strong> or <strong>Smart Fill</strong> to paste a JD. Good luck with your job search! 💪<br><br><em style="font-size:11px;color:var(--text3)">Re-launch this tour anytime from Settings → About.</em>',el:null,nav:null},
+]
+let _tourStep=0
+function startTour(){
+  localStorage.setItem('mja_tour_seen','1')
+  _tourStep=0;_showTourStep()
+}
+function _showTourStep(){
+  document.getElementById('_tourOv')?.remove()
+  if(_tourStep>=TOUR.length)return
+  const step=TOUR[_tourStep]
+  if(step.nav)showPage(step.nav)
+
+  const ov=document.createElement('div')
+  ov.id='_tourOv';ov.style.cssText='position:fixed;inset:0;z-index:500;pointer-events:none'
+
+  // Backdrop
+  const bd=document.createElement('div')
+  bd.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(2px);pointer-events:all'
+  bd.onclick=()=>ov.remove()
+  ov.appendChild(bd)
+
+  // Highlight target element
+  let rect=null
+  if(step.el){
+    const el=document.getElementById(step.el)
+    if(el){
+      rect=el.getBoundingClientRect()
+      const hl=document.createElement('div')
+      hl.style.cssText=`position:absolute;border-radius:10px;border:2px solid var(--accent);box-shadow:0 0 0 4px rgba(108,99,255,.25),0 0 0 9999px rgba(0,0,0,.72);pointer-events:none;transition:all .3s`
+      hl.style.left=(rect.left-6)+'px';hl.style.top=(rect.top-6)+'px'
+      hl.style.width=(rect.width+12)+'px';hl.style.height=(rect.height+12)+'px'
+      ov.appendChild(hl)
+      bd.style.background='transparent';bd.style.boxShadow='none'
+    }
+  }
+
+  // Card
+  const card=document.createElement('div')
+  card.style.cssText='position:absolute;z-index:10;background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px 24px;width:300px;box-shadow:0 20px 60px rgba(0,0,0,.6);pointer-events:all;animation:tourIn .25s ease both'
+  // Position card
+  if(rect){
+    const sideRight=rect.right+16+300<window.innerWidth
+    const sideLeft=rect.left-16-300>0
+    if(sideRight){card.style.left=(rect.right+16)+'px';card.style.top=Math.max(16,Math.min(rect.top,window.innerHeight-280))+'px'}
+    else if(sideLeft){card.style.left=(rect.left-316)+'px';card.style.top=Math.max(16,Math.min(rect.top,window.innerHeight-280))+'px'}
+    else{card.style.left='50%';card.style.top=(rect.bottom+16)+'px';card.style.transform='translateX(-50%)'}
+  }else{card.style.left='50%';card.style.top='50%';card.style.transform='translate(-50%,-50%)'}
+
+  // Progress dots
+  const dots=TOUR.map((_,i)=>`<div style="height:4px;border-radius:2px;transition:.2s;background:${i===_tourStep?'var(--accent)':'var(--bg4)'};width:${i===_tourStep?'18px':'7px'}"></div>`).join('')
+
+  card.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;line-height:1.3;padding-right:8px">${step.title}</div>
+      <button onclick="document.getElementById('_tourOv').remove()" style="background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:13px;border-radius:6px;padding:2px 7px;line-height:1.4;flex-shrink:0">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.75;margin-bottom:16px">${step.desc}</div>
+    <div style="display:flex;gap:4px;margin-bottom:16px;align-items:center">${dots}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:11px;color:var(--text3)">${_tourStep+1} of ${TOUR.length}</span>
+      <div style="display:flex;gap:6px">
+        ${_tourStep>0?`<button class="btn-ghost" style="padding:6px 12px;font-size:12px" onclick="_tourStep--;_showTourStep()">← Back</button>`:''}
+        <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="_tourStep++;_showTourStep()">${_tourStep===TOUR.length-1?'Finish 🎉':'Next →'}</button>
+      </div>
+    </div>`
+  ov.appendChild(card)
+  document.body.appendChild(ov)
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LEGAL — Terms of Service & Privacy Policy
+═══════════════════════════════════════════════════════════════════ */
+function _legal(title,html){
+  const ov=document.createElement('div')
+  ov.className='modal-overlay';ov.style.zIndex='300'
+  ov.innerHTML=`<div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <div class="modal-title">${title}</div>
+      <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+    </div>
+    <div style="max-height:60vh;overflow-y:auto;padding-right:4px">${html}</div>
+    <div class="modal-footer"><button class="btn-primary" onclick="this.closest('.modal-overlay').remove()">I Understand</button></div>
+  </div>`
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove()})
+  document.body.appendChild(ov)
+  setTimeout(()=>ov.classList.add('open'),10)
+}
+
+function showTerms(){_legal('Terms of Service',`
+  <p style="font-size:12px;color:var(--text3);margin-bottom:16px">Effective: March 2025 &nbsp;·&nbsp; MJA — My Job Applications &nbsp;·&nbsp; v1.0</p>
+  <div class="lh">1. Acceptance of Terms</div>
+  <p class="lp">By accessing or using MJA ("the App"), you agree to be bound by these Terms of Service. If you do not agree, please discontinue use immediately.</p>
+  <div class="lh">2. Description of Service</div>
+  <p class="lp">MJA is a personal job application tracking tool designed for individual, non-commercial use. We may add, modify, or remove features at any time with or without notice.</p>
+  <div class="lh">3. Your Account</div>
+  <p class="lp">You are responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account. Notify us immediately of any suspected unauthorised access at <span style="color:var(--accent)">security@mja.app</span>.</p>
+  <div class="lh">4. Ownership of Your Data</div>
+  <p class="lp">All job application data you enter into MJA belongs to you. You may export or delete your data at any time via Settings. We do not claim any ownership over your content.</p>
+  <div class="lh">5. Acceptable Use</div>
+  <p class="lp">You agree not to: (a) use the App for any unlawful purpose; (b) attempt to gain unauthorised access to our systems; (c) use automated bots, scrapers, or scripts against the App; (d) impersonate other users or individuals; or (e) upload malicious code or content that could harm other users.</p>
+  <div class="lh">6. Disclaimer of Warranties</div>
+  <p class="lp">MJA is provided on an "as is" and "as available" basis without warranties of any kind, either express or implied, including but not limited to merchantability, fitness for a particular purpose, or uninterrupted availability. We do not guarantee that the App will be error-free.</p>
+  <div class="lh">7. Limitation of Liability</div>
+  <p class="lp">To the maximum extent permitted by applicable law, MJA and its operators shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the App, including loss of data or missed job opportunities.</p>
+  <div class="lh">8. Termination</div>
+  <p class="lp">We reserve the right to suspend or terminate accounts that violate these Terms. You may delete your account at any time from Settings → Account → Danger Zone.</p>
+  <div class="lh">9. Changes to Terms</div>
+  <p class="lp">We may update these Terms periodically. Continued use of the App after changes constitutes acceptance of the revised Terms. We will notify you of material changes via the App.</p>
+  <div class="lh">10. Governing Law</div>
+  <p class="lp">These Terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts of Hyderabad, Telangana, India.</p>
+  <div class="lh">11. Contact</div>
+  <p class="lp">For questions about these Terms, email us at <span style="color:var(--accent)">legal@mja.app</span>.</p>
+`)}
+
+function showPrivacy(){_legal('Privacy Policy',`
+  <p style="font-size:12px;color:var(--text3);margin-bottom:16px">Effective: March 2025 &nbsp;·&nbsp; MJA — My Job Applications &nbsp;·&nbsp; v1.0</p>
+  <div class="lh">1. Information We Collect</div>
+  <p class="lp">We collect: (a) <strong>Account information</strong> — your name, email address, and hashed password when you register; (b) <strong>Application data</strong> — job details, notes, skills, and interview records you voluntarily enter; (c) <strong>Usage analytics</strong> — page visits and feature interactions, collected in aggregate and never tied to individual application content.</p>
+  <div class="lh">2. How We Use Your Information</div>
+  <p class="lp">Your information is used solely to: provide App functionality; send account-related notifications (e.g., password reset); send optional follow-up reminders (if enabled); improve App performance and features; and generate anonymised aggregate statistics to understand usage patterns.</p>
+  <div class="lh">3. Data Storage & Security</div>
+  <p class="lp">Application data is stored in encrypted PostgreSQL databases (Neon). Passwords are hashed using Argon2id — we never store plaintext passwords. All data transmission is secured via TLS 1.2+. We conduct regular security reviews.</p>
+  <div class="lh">4. Data Sharing</div>
+  <p class="lp">We do not sell, rent, or trade your personal data. We may share data only with: (a) infrastructure providers (e.g., database hosting) under strict confidentiality agreements; or (b) law enforcement agencies when legally required. Your job application data is <strong>never</strong> shared with employers or recruiters without your explicit, written consent.</p>
+  <div class="lh">5. Public Profile</div>
+  <p class="lp">If you enable a public profile, selected application data becomes visible to anyone with your profile URL. You have full control over what is shown via Settings → Privacy. You can disable your public profile at any time.</p>
+  <div class="lh">6. Cookies & Local Storage</div>
+  <p class="lp">We use minimal session cookies for authentication. We use browser localStorage to store your application data and preferences locally on your device. We use <strong>no advertising cookies, no cross-site trackers, and no third-party analytics SDKs</strong>.</p>
+  <div class="lh">7. Your Rights</div>
+  <p class="lp">You have the right to: <strong>Access</strong> your data (Settings → Data → Export CSV); <strong>Correct</strong> inaccuracies (by editing applications); <strong>Delete</strong> your account and all associated data (Settings → Account → Danger Zone); <strong>Opt out</strong> of notifications (Settings → Notifications); and <strong>Withdraw consent</strong> for public profile at any time.</p>
+  <div class="lh">8. Data Retention</div>
+  <p class="lp">Your data is retained for as long as your account is active. Upon account deletion, all personal data is permanently and irreversibly deleted within 30 days.</p>
+  <div class="lh">9. Children's Privacy</div>
+  <p class="lp">MJA is not intended for use by individuals under the age of 13. We do not knowingly collect data from children.</p>
+  <div class="lh">10. Changes to this Policy</div>
+  <p class="lp">We may update this Privacy Policy from time to time. We will notify you of significant changes within the App. Continued use after the effective date constitutes acceptance.</p>
+  <div class="lh">11. Contact</div>
+  <p class="lp">For privacy-related questions or data requests, email us at <span style="color:var(--accent)">privacy@mja.app</span>.</p>
+`)}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════════════ */
+function showToast(msg,type='success'){
+  const wrap=document.getElementById('toastWrap');if(!wrap)return
+  const color=type==='success'?'var(--green)':'var(--red)'
+  const icon=type==='success'?'✓':'✕'
+  const toast=document.createElement('div')
+  toast.className='toast '+type
+  toast.innerHTML=`<span style="color:${color};font-size:14px;font-weight:700">${icon}</span><span>${msg}</span>`
+  wrap.appendChild(toast)
+  setTimeout(()=>{toast.style.opacity='0';toast.style.transform='translateX(36px)';toast.style.transition='.3s';setTimeout(()=>toast.remove(),300)},3200)
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded',()=>{
+  applyTheme(currentTheme)
+  const appModal=document.getElementById('appModal')
+  if(appModal)appModal.addEventListener('click',e=>{if(e.target===appModal)closeModal()})
+  const checkMobile=()=>{const btn=document.getElementById('mobileMenuBtn');if(btn)btn.style.display=window.innerWidth<=768?'flex':'none'}
+  checkMobile();window.addEventListener('resize',checkMobile)
+})
+</script>
+<style>
+/* ═══════════════ RESET & THEME ════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);transition:var(--transition)}
+input,select,textarea,button{font-family:'DM Sans',sans-serif;transition:var(--transition)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+:root{--transition:background .25s,color .25s,border-color .25s}
+[data-theme="dark"]{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;--bg4:#22222f;
+  --border:#2a2a3a;--border2:#3a3a4a;
+  --text:#f0f0f8;--text2:#9898b8;--text3:#55557a;
+  --accent:#6c63ff;--accent-h:#7d75ff;
+  --green:#43e97b;--orange:#f7971e;--teal:#38f9d7;--red:#ff6b6b;
+  --shadow:0 8px 32px rgba(0,0,0,.5);--sidebar-w:242px}
+[data-theme="light"]{
+  --bg:#f2f2f7;--bg2:#ffffff;--bg3:#f0f0f6;--bg4:#e6e6f0;
+  --border:#e0e0ec;--border2:#cacad8;
+  --text:#111118;--text2:#55556a;--text3:#9898b0;
+  --accent:#5a52ee;--accent-h:#4840d4;
+  --green:#1a9e52;--orange:#d4780a;--teal:#0891b2;--red:#dc3545;
+  --shadow:0 8px 32px rgba(0,0,0,.12);--sidebar-w:242px}
+
+/* ═══════════════ LAYOUT ════════════════════════ */
+.app-shell{display:grid;grid-template-columns:var(--sidebar-w) 1fr;height:100vh}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow:hidden;z-index:20}
+.main-area{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ═══════════════ SIDEBAR ═══════════════════════ */
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:18px 18px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.logo-mark{width:34px;height:34px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;line-height:1}
+.logo-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.sidebar-scroll{flex:1;overflow-y:auto;padding:6px 0}
+.sidebar-section{padding:8px 10px 4px}
+.sidebar-section-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);padding:0 8px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:background .15s,color .15s;margin-bottom:2px;border:none;background:transparent;width:100%;text-align:left}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--accent);color:#fff}
+.nav-icon{width:16px;height:16px;opacity:.65;flex-shrink:0}
+.nav-item.active .nav-icon{opacity:1}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:700;padding:1px 6px;border-radius:100px;background:var(--bg4);color:var(--text2)}
+.nav-item.active .nav-badge{background:rgba(255,255,255,.25);color:#fff}
+.sidebar-user{border-top:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .15s;flex-shrink:0}
+.sidebar-user:hover{background:var(--bg3)}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent) 0%,var(--teal) 100%);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#fff;flex-shrink:0}
+
+/* ═══════════════ TOPBAR ════════════════════════ */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 22px;height:54px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+.topbar-title{font-family:'Syne',sans-serif;font-weight:700;font-size:17px}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.icon-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;position:relative}
+.icon-btn:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.btn-primary{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.btn-primary:hover{background:var(--accent-h)}
+.btn-ghost{padding:7px 14px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:.15s;font-family:'DM Sans',sans-serif}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text);background:var(--bg3)}
+.btn-danger{border-color:var(--red)!important;color:var(--red)!important}
+.btn-danger:hover{background:rgba(255,107,107,.08)!important}
+
+/* ═══════════════ LOGIN ═════════════════════════ */
+#loginScreen{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center}
+#loginScreen::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(108,99,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(108,99,255,.05) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+.auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:34px 34px 28px;width:100%;max-width:420px;position:relative;z-index:1;box-shadow:var(--shadow);animation:authIn .35s cubic-bezier(.16,1,.3,1) both}
+@keyframes authIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:5px}
+.auth-tabs{display:flex;background:var(--bg3);border-radius:10px;padding:4px;margin-bottom:20px}
+.auth-tab{flex:1;padding:9px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;border-radius:8px;cursor:pointer;transition:.2s}
+.auth-tab.active{background:var(--accent);color:#fff;font-weight:600}
+.form-group{margin-bottom:13px}
+.form-label{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text2);margin-bottom:6px}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;padding:11px 14px;outline:none;transition:border-color .2s,box-shadow .2s;font-family:'DM Sans',sans-serif}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,.12)}
+.form-input::placeholder{color:var(--text3)}
+.auth-err{font-size:12px;color:var(--red);margin-top:-6px;margin-bottom:12px;display:none;background:rgba(255,107,107,.08);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,107,107,.2)}
+.auth-submit{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s}
+.auth-submit:hover{background:var(--accent-h)}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--text3);font-size:12px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-demo-btn{width:100%;padding:11px;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:.15s}
+.auth-demo-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(108,99,255,.06)}
+.auth-footer{text-align:center;font-size:12px;color:var(--text3);margin-top:16px;line-height:1.6}
+
+/* ═══════════════ PAGES ═════════════════════════ */
+.page{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0}
+.page.active{display:flex}
+.page-body{flex:1;overflow-y:auto;padding:22px 22px}
+
+/* ═══════════════ STATS BAR ═════════════════════ */
+.stats-bar{display:flex;gap:7px;flex-wrap:wrap;padding:10px 22px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.stat-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:100px;background:var(--bg3);border:1px solid var(--border);font-size:12px;cursor:pointer;transition:border-color .15s;user-select:none}
+.stat-pill:hover,.stat-pill.active-filter{border-color:var(--accent)}
+.stat-pill.active-filter{background:rgba(108,99,255,.08)}
+.stat-n{font-family:'Syne',sans-serif;font-weight:700;font-size:13px}
+.stat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ═══════════════ TOOLBAR ═══════════════════════ */
+.toolbar{display:flex;align-items:center;gap:7px;padding:10px 22px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;flex-wrap:wrap}
+.search-wrap{flex:1;min-width:140px;position:relative}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none}
+.search-input{width:100%;padding:8px 12px 8px 32px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--text3)}
+.filter-select{padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text2);font-size:12px;outline:none;cursor:pointer;font-family:'DM Sans',sans-serif}
+.filter-select option{background:var(--bg2)}
+.view-toggle{display:flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--bg3)}
+.view-btn{padding:7px 11px;border:none;background:transparent;color:var(--text3);cursor:pointer;transition:.15s;display:flex;align-items:center}
+.view-btn:hover{background:var(--bg4);color:var(--text)}
+.view-btn.active{background:var(--accent);color:#fff}
+/* Smart Fill button */
+.sf-toolbar-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:9px;border:1px solid var(--accent);background:rgba(108,99,255,.07);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.sf-toolbar-btn:hover{background:rgba(108,99,255,.15)}
+/* Clear All button */
+.clear-toolbar-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:9px;border:1px solid rgba(255,107,107,.4);background:rgba(255,107,107,.06);color:var(--red);font-size:12px;font-weight:500;cursor:pointer;transition:.15s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.clear-toolbar-btn:hover{background:rgba(255,107,107,.14);border-color:var(--red)}
+/* Export button */
+.export-toolbar-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;cursor:pointer;transition:.15s;font-family:'DM Sans',sans-serif}
+.export-toolbar-btn:hover{background:var(--bg3);color:var(--text)}
+
+/* ═══════════════ KANBAN ════════════════════════ */
+.kanban-board{display:flex;gap:12px;overflow-x:auto;padding:18px 22px 22px;height:100%}
+.kanban-col{min-width:245px;max-width:258px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.col-header{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.col-count{font-size:11px;padding:2px 8px;border-radius:100px;background:var(--bg4);color:var(--text2);font-family:'DM Sans',sans-serif;font-weight:500}
+.col-cards{display:flex;flex-direction:column;gap:7px;min-height:40px;overflow-y:auto}
+.app-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px;cursor:pointer;transition:border-color .15s,transform .12s,box-shadow .15s;position:relative;overflow:hidden;animation:cardIn .2s ease both}
+@keyframes cardIn{from{opacity:0;transform:translateY(4px)}}
+.app-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px}
+.app-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 18px rgba(0,0,0,.18)}
+.card-applied::before{background:#6c63ff}.card-screening::before{background:#f7971e}
+.card-interview::before{background:#38f9d7}.card-offer::before{background:#43e97b}
+.card-rejected::before{background:#ff6b6b}.card-ghosted::before{background:#8888a8}
+.card-company{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:2px}
+.card-role{font-size:12px;color:var(--text2);margin-bottom:8px}
+.card-footer{display:flex;align-items:center;justify-content:space-between}
+.card-date{font-size:10px;color:var(--text3)}
+.pri-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:100px;text-transform:uppercase;letter-spacing:.4px}
+.card-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:7px}
+.ctag{font-size:10px;padding:2px 6px;background:var(--bg4);color:var(--text2);border-radius:3px}
+.card-next{font-size:11px;color:var(--orange);margin-top:6px}
+
+/* ═══════════════ TABLE ═════════════════════════ */
+.table-container{border-radius:12px;border:1px solid var(--border);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--bg3)}
+th{padding:10px 14px;text-align:left;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text2);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr{transition:background .12s;cursor:pointer}
+tbody tr:hover{background:var(--bg3)}
+tbody tr:last-child td{border-bottom:none}
+.tc{font-family:'Syne',sans-serif;font-weight:700;font-size:13px}
+.sbadge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:100px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.sbadge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* ═══════════════ MODAL ═════════════════════════ */
+.modal-overlay{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:18px;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:18px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;padding:24px;transform:translateY(12px) scale(.98);transition:transform .2s;box-shadow:var(--shadow)}
+.modal-overlay.open .modal{transform:none}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:18px}
+.modal-sub{font-size:13px;color:var(--text2);margin-top:3px}
+.modal-close{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
+.modal-close:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.modal-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+
+/* ═══════════════ FORM ══════════════════════════ */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.form-full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:5px}
+.field-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text2)}
+.field-input{background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;padding:10px 13px;outline:none;transition:border-color .2s,box-shadow .2s;width:100%;font-family:'DM Sans',sans-serif}
+.field-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,.1)}
+.field-input::placeholder{color:var(--text3)}
+.field-input.textarea{resize:vertical}
+#f_source_other_wrap{border-left:3px solid var(--accent);padding-left:12px;border-radius:0 9px 9px 0;transition:opacity .2s,transform .2s}
+
+/* ═══════════════ SMART FILL ════════════════════ */
+.sf-tab{padding:8px 16px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:.15s}
+.sf-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.sf-textarea{width:100%;height:220px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;padding:14px;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;line-height:1.65;transition:border-color .2s}
+.sf-textarea:focus{border-color:var(--accent)}
+.sf-textarea::placeholder{color:var(--text3)}
+.sf-dropzone{border:2px dashed var(--border);border-radius:12px;padding:44px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
+.sf-dropzone:hover,.sf-dropzone.drag-over{border-color:var(--accent);background:rgba(108,99,255,.05)}
+
+/* ═══════════════ DETAIL ════════════════════════ */
+.detail-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:14px}
+.detail-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:4px}
+.detail-val{font-size:13px}
+.detail-box{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:11px 13px;font-size:13px;color:var(--text2);line-height:1.7;white-space:pre-wrap;margin-top:6px}
+.detail-action-box{background:rgba(247,151,30,.08);border:1px solid rgba(247,151,30,.2);border-radius:9px;padding:10px 13px;font-size:13px;color:var(--orange);margin-top:6px}
+.detail-section-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-top:14px;margin-bottom:7px}
+.tag-wrap{display:flex;flex-wrap:wrap;gap:5px}
+.dtag{font-size:11px;padding:3px 10px;background:var(--bg4);color:var(--text2);border-radius:5px}
+.round-row{display:flex;align-items:center;gap:8px;padding:9px 13px;background:var(--bg3);border-radius:9px;margin-bottom:7px;flex-wrap:wrap}
+
+/* ═══════════════ ANALYTICS ═════════════════════ */
+.analytics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px}
+.metric-n{font-family:'Syne',sans-serif;font-weight:800;font-size:30px}
+.metric-l{font-size:12px;color:var(--text2);margin-top:2px}
+.metric-delta{font-size:11px;color:var(--text3);margin-top:5px}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px}
+.chart-title{font-family:'Syne',sans-serif;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:16px}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bar-lbl{width:76px;font-size:11px;color:var(--text2);flex-shrink:0}
+.bar-track{flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.bar-n{font-size:11px;color:var(--text3);min-width:20px;text-align:right}
+
+/* ═══════════════ SETTINGS ══════════════════════ */
+.settings-layout{display:grid;grid-template-columns:185px 1fr;gap:20px;max-width:820px}
+.settings-nav{display:flex;flex-direction:column;gap:2px}
+.settings-tab{padding:9px 12px;border-radius:9px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:left;transition:.15s;display:flex;align-items:center;gap:9px}
+.settings-tab:hover{background:var(--bg3);color:var(--text)}
+.settings-tab.active{background:rgba(108,99,255,.12);color:var(--accent);font-weight:600}
+.settings-panel{display:none}
+.settings-panel.active{display:block}
+.settings-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px}
+.settings-card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:3px}
+.settings-card-desc{font-size:12px;color:var(--text2);margin-bottom:14px}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.settings-row:last-child{border-bottom:none;padding-bottom:0}
+.settings-row-label{font-size:13px;font-weight:500}
+.settings-row-desc{font-size:12px;color:var(--text3);margin-top:2px}
+.toggle{position:relative;width:42px;height:24px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-track{position:absolute;inset:0;background:var(--bg4);border:1px solid var(--border);border-radius:100px;transition:.2s}
+.toggle input:checked+.toggle-track{background:var(--accent);border-color:var(--accent)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;pointer-events:none}
+.toggle input:checked~.toggle-thumb{transform:translateX(18px)}
+.theme-options{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.theme-option{border:2px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;transition:.15s;text-align:center;background:var(--bg3)}
+.theme-option:hover{border-color:var(--border2)}
+.theme-option.active{border-color:var(--accent);background:rgba(108,99,255,.07)}
+.theme-preview{width:100%;height:44px;border-radius:7px;margin-bottom:8px;overflow:hidden;display:flex;gap:3px;padding:5px}
+.theme-preview-sidebar{width:30%;border-radius:4px}
+.theme-preview-main{flex:1;border-radius:4px}
+.theme-name{font-size:13px;font-weight:600}
+.theme-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.profile-section{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.profile-avatar-lg{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;flex-shrink:0}
+
+/* ═══════════════ LEGAL ═════════════════════════ */
+.lh{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--text);margin:16px 0 5px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.lp{font-size:12px;color:var(--text2);line-height:1.75;margin-bottom:4px}
+
+/* ═══════════════ WORKSPACE ═════════════════════ */
+.ws-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.ws-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;cursor:pointer;transition:border-color .15s}
+.ws-card:hover{border-color:var(--accent)}
+.ws-card-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px}
+.ws-card-desc{font-size:12px;color:var(--text2);margin-bottom:12px}
+.ws-card-meta{display:flex;gap:14px;font-size:12px;color:var(--text2)}
+.role-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;text-transform:uppercase;letter-spacing:.4px;display:inline-block;margin-top:9px}
+
+/* ═══════════════ ABOUT ═════════════════════════ */
+.about-hero{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:26px;margin-bottom:13px;display:flex;align-items:center;gap:20px}
+.about-logo-big{width:64px;height:64px;border-radius:18px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.about-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:13px}
+.about-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px}
+.feature-item{display:flex;align-items:center;gap:10px;font-size:13px;padding:5px 0}
+.feature-check{width:18px;height:18px;border-radius:50%;background:rgba(67,233,123,.15);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-weight:700}
+.changelog-item{padding:12px 0;border-bottom:1px solid var(--border)}
+.changelog-item:last-child{border-bottom:none}
+.changelog-ver{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--accent)}
+.changelog-date{font-size:11px;color:var(--text3);margin-left:8px}
+.changelog-note{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.6}
+
+/* ═══════════════ EMPTY STATE ═══════════════════ */
+.empty-state{text-align:center;padding:52px 20px;color:var(--text3)}
+.empty-icon{font-size:42px;margin-bottom:12px}
+.empty-title{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;color:var(--text);margin-bottom:6px}
+.empty-desc{font-size:13px;line-height:1.6;max-width:300px;margin:0 auto 18px}
+
+/* ═══════════════ TOAST ═════════════════════════ */
+.toast-wrap{position:fixed;bottom:22px;right:22px;z-index:300;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:11px 16px;display:flex;align-items:center;gap:10px;font-size:13px;box-shadow:var(--shadow);animation:toastIn .3s cubic-bezier(.16,1,.3,1) both;min-width:200px}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px)}}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error{border-left:3px solid var(--red)}
+
+/* ═══════════════ TOUR ══════════════════════════ */
+@keyframes tourIn{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+
+/* ═══════════════ RESPONSIVE ════════════════════ */
+@media(max-width:768px){
+  .app-shell{grid-template-columns:1fr}
+  .sidebar{position:fixed;left:-260px;top:0;bottom:0;width:252px;z-index:100;transition:left .3s}
+  .sidebar.mobile-open{left:0}
+  .main-area{width:100%}
+  .form-grid{grid-template-columns:1fr}
+  .analytics-grid{grid-template-columns:1fr 1fr}
+  .about-grid,.charts-row,.ws-grid{grid-template-columns:1fr}
+  .settings-layout{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ══════════════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div>
+      <div><div class="logo-text">MJA</div><div style="font-size:10px;color:var(--text3)">My Job Applications</div></div>
+    </div>
+    <p style="font-size:13px;color:var(--text3);margin-bottom:22px;margin-top:4px">Track every application. Land your dream job.</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabSignin" onclick="switchTab('signin')">Sign In</button>
+      <button class="auth-tab" id="tabSignup" onclick="switchTab('signup')">Create Account</button>
+    </div>
+    <!-- Sign In -->
+    <div id="formSignin">
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-input" id="siEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
+      <div class="form-group">
+        <label class="form-label">Password<span style="text-transform:none;letter-spacing:0;color:var(--accent);cursor:pointer;font-weight:400;font-size:11px" onclick="showToast('Reset link sent to your email!','success')">Forgot?</span></label>
+        <input class="form-input" id="siPass" type="password" placeholder="••••••••">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:13px"><input type="checkbox" id="rememberMe" style="accent-color:var(--accent);width:15px;height:15px"><label for="rememberMe" style="font-size:13px;color:var(--text2);cursor:pointer">Remember me for 30 days</label></div>
+      <div class="auth-err" id="siErr"></div>
+      <button class="auth-submit" onclick="doSignIn()">Sign In</button>
+    </div>
+    <!-- Sign Up -->
+    <div id="formSignup" style="display:none">
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="suName" type="text" placeholder="Arjun Mehta" autocomplete="name"></div>
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-input" id="suEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="suPass" type="password" placeholder="Min. 8 characters"></div>
+      <div class="form-group"><label class="form-label">Confirm Password</label><input class="form-input" id="suPass2" type="password" placeholder="Repeat password"></div>
+      <div class="auth-err" id="suErr"></div>
+      <button class="auth-submit" onclick="doSignUp()">Create Account</button>
+    </div>
+    <div class="auth-divider">or</div>
+    <button class="auth-demo-btn" onclick="demoLogin()">⚡ Continue with Demo Account</button>
+    <div class="auth-footer">By signing in you agree to our <span style="color:var(--accent);cursor:pointer" onclick="showTerms()">Terms of Service</span> &amp; <span style="color:var(--accent);cursor:pointer" onclick="showPrivacy()">Privacy Policy</span></div>
+  </div>
+</div>
+
+<!-- ═══ APP SHELL ═══════════════════════════════════════════════════ -->
+<div class="app-shell" id="appShell" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div>
+      <div><div class="logo-text">MJA</div><div class="logo-sub">My Job Applications</div></div>
+    </div>
+    <div class="sidebar-scroll">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Main</div>
+        <button class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+          Dashboard<span class="nav-badge" id="navBadge">7</span>
+        </button>
+        <button class="nav-item" id="nav-analytics" onclick="showPage('analytics')">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+          Analytics
+        </button>
+        <button class="nav-item" id="nav-workspace" onclick="showPage('workspace')">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg>
+          Workspaces
+        </button>
+        <button class="nav-item" id="nav-profile" onclick="showPage('profile')">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+          Public Profile
+        </button>
+      </div>
+      <div class="sidebar-section" style="margin-top:6px">
+        <div class="sidebar-section-label">Manage</div>
+        <button class="nav-item" id="nav-settings" onclick="showPage('settings')">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+          Settings
+        </button>
+        <button class="nav-item" id="nav-about" onclick="showPage('about')">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+          About MJA
+        </button>
+      </div>
+      <div class="sidebar-section" style="margin-top:8px">
+        <div class="sidebar-section-label">Quick Stats</div>
+        <div id="sidebarStats" style="padding:4px 0"></div>
+      </div>
+    </div>
+    <div class="sidebar-user" onclick="showPage('settings')">
+      <div class="user-avatar" id="sidebarAvatar">AM</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500" id="sidebarName">Arjun Mehta</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebarEmail">arjun@email.com</div></div>
+      <span style="color:var(--text3)">›</span>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-area">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="icon-btn" id="mobileMenuBtn" style="display:none" onclick="toggleMobileSidebar()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 2.5h14M1 8h14M1 13.5h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+        </button>
+        <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" id="themeBtn" onclick="cycleTheme()" title="Toggle theme">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        </button>
+        <button class="icon-btn" onclick="showToast('No new notifications','success')" title="Notifications" style="position:relative">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+          <span style="position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--red);border:2px solid var(--bg2)"></span>
+        </button>
+        <button class="btn-primary" id="topAddBtn" onclick="openAddModal()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Add Application
+        </button>
+      </div>
+    </div>
+
+    <!-- ── DASHBOARD PAGE ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-bar" id="statsBar"></div>
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.4"/><path d="M9.5 9.5L13 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <input class="search-input" id="searchQ" placeholder="Search company, role, skills…" oninput="renderDashboard()">
+        </div>
+        <select class="filter-select" id="fStatus" onchange="renderDashboard()">
+          <option value="">All Status</option>
+          <option>Applied</option><option>Screening</option><option>Interview</option><option>Offer</option><option>Rejected</option><option>Ghosted</option>
+        </select>
+        <select class="filter-select" id="fPriority" onchange="renderDashboard()">
+          <option value="">All Priority</option><option>High</option><option>Medium</option><option>Low</option>
+        </select>
+        <select class="filter-select" id="fSort" onchange="renderDashboard()">
+          <option value="new">Newest First</option><option value="old">Oldest First</option><option value="co">Company A–Z</option><option value="st">By Status</option>
+        </select>
+        <div class="view-toggle">
+          <button class="view-btn active" id="vKanban" onclick="setView('kanban')" title="Kanban board">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor"><rect x="0" y="0" width="3.5" height="13" rx="1"/><rect x="4.75" y="0" width="3.5" height="9" rx="1"/><rect x="9.5" y="0" width="3.5" height="11" rx="1"/></svg>
+          </button>
+          <button class="view-btn" id="vTable" onclick="setView('table')" title="Table view">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor"><rect x="0" y="0" width="13" height="3" rx="1"/><rect x="0" y="4" width="13" height="3" rx="1" opacity=".6"/><rect x="0" y="8" width="13" height="3" rx="1" opacity=".35"/></svg>
+          </button>
+        </div>
+        <!-- ✨ SMART FILL BUTTON -->
+        <button class="sf-toolbar-btn" id="sfToolBtn" onclick="openSmartFill()" title="Paste a job description to auto-fill fields">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+          ✨ Smart Fill
+        </button>
+        <!-- 📥 EXPORT -->
+        <button class="export-toolbar-btn" onclick="exportCSV()" title="Export as CSV">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v8M3 6l3.5 3.5L10 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 10v1.5a.5.5 0 00.5.5h10a.5.5 0 00.5-.5V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Export
+        </button>
+        <!-- 🗑️ CLEAR ALL BUTTON -->
+        <button class="clear-toolbar-btn" id="clearAllBtn" onclick="confirmClearAll()" title="Delete all applications">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+          Clear All
+        </button>
+      </div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0">
+        <div id="kanbanView" style="flex:1;overflow:auto"></div>
+        <div id="tableView" style="flex:1;overflow:auto;padding:18px 22px;display:none"></div>
+      </div>
+    </div>
+
+    <!-- ── ANALYTICS PAGE ── -->
+    <div class="page" id="page-analytics">
+      <div class="page-body">
+        <div class="analytics-grid" id="analyticsMetrics"></div>
+        <div class="charts-row" id="analyticsCharts"></div>
+      </div>
+    </div>
+
+    <!-- ── WORKSPACES PAGE ── -->
+    <div class="page" id="page-workspace">
+      <div class="page-body">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+          <div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px">Team Workspaces</div><div style="font-size:13px;color:var(--text2);margin-top:3px">Track your job hunt together with friends or cohort members</div></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-ghost" onclick="showToast('Enter invite code coming soon!','success')">Join with Code</button>
+            <button class="btn-primary" onclick="showToast('Workspace created!','success')">+ New Workspace</button>
+          </div>
+        </div>
+        <div class="ws-grid">
+          <div class="ws-card"><div class="ws-card-name">Job Hunt Q1 2025</div><div class="ws-card-desc">FAANG &amp; product companies</div><div class="ws-card-meta"><span>👥 3 members</span><span>📋 12 apps</span></div><div class="role-badge" style="background:rgba(108,99,255,.12);color:var(--accent)">Owner</div></div>
+          <div class="ws-card"><div class="ws-card-name">Startup Circuit</div><div class="ws-card-desc">Series A/B startups only</div><div class="ws-card-meta"><span>👥 5 members</span><span>📋 8 apps</span></div><div class="role-badge" style="background:rgba(56,249,215,.12);color:var(--teal)">Member</div></div>
+          <div class="ws-card"><div class="ws-card-name">Bootcamp Cohort '25</div><div class="ws-card-desc">18 classmates tracking together</div><div class="ws-card-meta"><span>👥 18 members</span><span>📋 47 apps</span></div><div class="role-badge" style="background:rgba(56,249,215,.12);color:var(--teal)">Member</div></div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+          <div style="padding:11px 16px;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);border-bottom:1px solid var(--border)">Shared Applications — Job Hunt Q1 2025</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:var(--bg3)"><th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);border-bottom:1px solid var(--border)">Member</th><th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);border-bottom:1px solid var(--border)">Company</th><th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);border-bottom:1px solid var(--border)">Role</th><th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);border-bottom:1px solid var(--border)">Status</th></tr></thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--text2)">Arjun M.</td><td style="padding:9px 14px;font-family:'Syne',sans-serif;font-weight:700">Google</td><td style="padding:9px 14px;color:var(--text2)">SWE L4</td><td style="padding:9px 14px"><span class="sbadge" style="color:#38f9d7;background:rgba(56,249,215,.12)">Interview</span></td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--text2)">Sneha R.</td><td style="padding:9px 14px;font-family:'Syne',sans-serif;font-weight:700">Stripe</td><td style="padding:9px 14px;color:var(--text2)">Frontend Eng.</td><td style="padding:9px 14px"><span class="sbadge" style="color:#f7971e;background:rgba(247,151,30,.12)">Screening</span></td></tr>
+              <tr><td style="padding:9px 14px;color:var(--text2)">Vikram K.</td><td style="padding:9px 14px;font-family:'Syne',sans-serif;font-weight:700">Razorpay</td><td style="padding:9px 14px;color:var(--text2)">UI Engineer</td><td style="padding:9px 14px"><span class="sbadge" style="color:#43e97b;background:rgba(67,233,123,.12)">Offer</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PUBLIC PROFILE PAGE ── -->
+    <div class="page" id="page-profile">
+      <div class="page-body" style="max-width:660px">
+        <div style="background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--accent);margin-bottom:16px">🌐 Public URL: <strong>mja.app/profile/arjunm</strong> — visible to anyone with this link</div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;display:flex;gap:18px;align-items:flex-start">
+          <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;flex-shrink:0" id="pubAvatarLetter">AM</div>
+          <div style="flex:1"><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px" id="pubName">Arjun Mehta</div><div style="color:var(--accent);font-size:13px;margin-bottom:5px">@arjunm</div><div style="font-size:13px;color:var(--text2);line-height:1.6">Senior Frontend Engineer · 4 YoE · React, TypeScript · Open to FAANG &amp; product startups</div><div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--text2)"><span><strong style="color:var(--text);font-family:'Syne',sans-serif" id="pubAppCount">7</strong> Applications</span></div></div>
+        </div>
+        <div style="margin-bottom:16px"><div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:10px">Skills</div><div style="display:flex;flex-wrap:wrap;gap:7px" id="pubSkills"></div></div>
+        <div><div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:10px">Public Applications</div><div id="pubApps"></div></div>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS PAGE ── -->
+    <div class="page" id="page-settings">
+      <div class="page-body">
+        <div class="settings-layout">
+          <div class="settings-nav">
+            <button class="settings-tab active" id="stab-account" onclick="showSettingsPanel('account')"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>Account</button>
+            <button class="settings-tab" id="stab-appearance" onclick="showSettingsPanel('appearance')"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zm1 14a1 1 0 100-2 1 1 0 000 2zm5-1.757l4.9-4.9a2 2 0 000-2.828L13.485 5.1a2 2 0 00-2.828 0L10 5.757v8.486zM16 18H9.071l6-6H16a2 2 0 012 2v2a2 2 0 01-2 2z" clip-rule="evenodd"/></svg>Appearance</button>
+            <button class="settings-tab" id="stab-notifications" onclick="showSettingsPanel('notifications')"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>Notifications</button>
+            <button class="settings-tab" id="stab-privacy" onclick="showSettingsPanel('privacy')"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>Privacy</button>
+            <button class="settings-tab" id="stab-data" onclick="showSettingsPanel('data')"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3zM3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7zM17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"/></svg>Data &amp; Export</button>
+            <div style="border-top:1px solid var(--border);margin:8px 0;padding-top:8px">
+              <button class="settings-tab" onclick="doSignOut()" style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>Sign Out</button>
+            </div>
+          </div>
+          <div>
+            <!-- Account Panel -->
+            <div class="settings-panel active" id="spanel-account">
+              <div class="settings-card">
+                <div class="settings-card-title">Profile</div><div class="settings-card-desc">Your personal information</div>
+                <div class="profile-section">
+                  <div class="profile-avatar-lg" id="settingsAvatar">AM</div>
+                  <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px" id="settingsName">Arjun Mehta</div><div style="font-size:12px;color:var(--text2)" id="settingsEmail">arjun@email.com</div><div style="font-size:12px;color:var(--accent);cursor:pointer;margin-top:5px" onclick="showToast('Photo upload coming soon!','success')">Change photo</div></div>
+                </div>
+                <div class="form-grid">
+                  <div class="field"><div class="field-label">Full Name</div><input class="field-input" id="sNameInput" type="text"></div>
+                  <div class="field"><div class="field-label">Username</div><input class="field-input" id="sUsernameInput" type="text"></div>
+                  <div class="field"><div class="field-label">Email</div><input class="field-input" id="sEmailInput" type="email"></div>
+                  <div class="field"><div class="field-label">Phone</div><input class="field-input" type="tel" placeholder="+91 9999 999 999"></div>
+                  <div class="field form-full"><div class="field-label">Headline</div><input class="field-input" type="text" placeholder="Senior Frontend Engineer · Open to FAANG &amp; startups"></div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn-primary" onclick="saveAccountSettings()">Save Changes</button></div>
+              </div>
+              <div class="settings-card">
+                <div class="settings-card-title">Change Password</div><div class="settings-card-desc">Update your login credentials</div>
+                <div class="form-grid">
+                  <div class="field form-full"><div class="field-label">Current Password</div><input class="field-input" type="password" placeholder="••••••••"></div>
+                  <div class="field"><div class="field-label">New Password</div><input class="field-input" type="password" placeholder="••••••••"></div>
+                  <div class="field"><div class="field-label">Confirm</div><input class="field-input" type="password" placeholder="••••••••"></div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn-primary" onclick="showToast('Password updated!','success')">Update Password</button></div>
+              </div>
+              <div class="settings-card" style="border-color:rgba(255,107,107,.25)">
+                <div class="settings-card-title" style="color:var(--red)">Danger Zone</div><div class="settings-card-desc">Irreversible actions — proceed with caution.</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <button class="btn-ghost btn-danger" onclick="confirmClearAll()">Clear All Applications</button>
+                  <button class="btn-ghost btn-danger" onclick="showToast('Deletion email sent. Check your inbox.','success')">Delete Account</button>
+                </div>
+              </div>
+            </div>
+            <!-- Appearance Panel -->
+            <div class="settings-panel" id="spanel-appearance">
+              <div class="settings-card">
+                <div class="settings-card-title">Theme</div><div class="settings-card-desc">Choose how MJA looks on your device</div>
+                <div class="theme-options">
+                  <div class="theme-option active" id="theme-dark" onclick="setTheme('dark')"><div class="theme-preview" style="background:#111118"><div class="theme-preview-sidebar" style="background:#1a1a24"></div><div class="theme-preview-main" style="background:#0a0a0f"></div></div><div class="theme-name">Dark</div><div class="theme-sub">Easy on the eyes</div></div>
+                  <div class="theme-option" id="theme-light" onclick="setTheme('light')"><div class="theme-preview" style="background:#f2f2f7"><div class="theme-preview-sidebar" style="background:#fff"></div><div class="theme-preview-main" style="background:#f0f0f6"></div></div><div class="theme-name">Light</div><div class="theme-sub">Clean and bright</div></div>
+                  <div class="theme-option" id="theme-system" onclick="setTheme('system')"><div class="theme-preview" style="background:linear-gradient(135deg,#111118 50%,#f2f2f7 50%)"><div class="theme-preview-sidebar" style="background:linear-gradient(135deg,#1a1a24 50%,#fff 50%)"></div><div class="theme-preview-main" style="background:linear-gradient(135deg,#0a0a0f 50%,#f0f0f6 50%)"></div></div><div class="theme-name">System</div><div class="theme-sub">Follows your device</div></div>
+                </div>
+              </div>
+              <div class="settings-card">
+                <div class="settings-card-title">Display</div><div class="settings-card-desc">Adjust card and board presentation</div>
+                <div class="settings-row"><div><div class="settings-row-label">Compact Kanban Cards</div><div class="settings-row-desc">Show less detail per card</div></div><label class="toggle"><input type="checkbox" id="compactCards" onchange="renderDashboard()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+                <div class="settings-row"><div><div class="settings-row-label">Show Salary on Cards</div><div class="settings-row-desc">Display salary range in Kanban</div></div><label class="toggle"><input type="checkbox" id="showSalary" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+              </div>
+            </div>
+            <!-- Notifications Panel -->
+            <div class="settings-panel" id="spanel-notifications">
+              <div class="settings-card">
+                <div class="settings-card-title">Reminders</div><div class="settings-card-desc">Get notified about follow-ups and interviews</div>
+                <div class="settings-row"><div><div class="settings-row-label">Follow-up Reminders</div><div class="settings-row-desc">Alert when next action dates are due</div></div><label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+                <div class="settings-row"><div><div class="settings-row-label">Interview Alerts</div><div class="settings-row-desc">24-hour alert before scheduled interviews</div></div><label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+                <div class="settings-row"><div><div class="settings-row-label">Weekly Digest</div><div class="settings-row-desc">Sunday summary of your job search progress</div></div><label class="toggle"><input type="checkbox"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+                <div class="settings-row"><div><div class="settings-row-label">Workspace Activity</div><div class="settings-row-desc">When teammates update their applications</div></div><label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+              </div>
+            </div>
+            <!-- Privacy Panel -->
+            <div class="settings-panel" id="spanel-privacy">
+              <div class="settings-card">
+                <div class="settings-card-title">Public Profile</div><div class="settings-card-desc">Control what's visible at mja.app/profile/arjunm</div>
+                <div class="settings-row"><div><div class="settings-row-label">Profile Active</div><div class="settings-row-desc">Allow others to view your public profile</div></div><label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+                <div class="settings-row"><div><div class="settings-row-label">Show Company Names</div></div><label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+                <div class="settings-row"><div><div class="settings-row-label">Show Salary Range</div></div><label class="toggle"><input type="checkbox"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+                <div class="settings-row"><div><div class="settings-row-label">Show Application Status</div></div><label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+              </div>
+              <div class="settings-card">
+                <div class="settings-card-title">Legal</div><div class="settings-card-desc">Review our policies and agreements</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+                  <button class="btn-ghost" onclick="showTerms()">Terms of Service</button>
+                  <button class="btn-ghost" onclick="showPrivacy()">Privacy Policy</button>
+                </div>
+              </div>
+            </div>
+            <!-- Data Panel -->
+            <div class="settings-panel" id="spanel-data">
+              <div class="settings-card">
+                <div class="settings-card-title">Export Your Data</div><div class="settings-card-desc">Download a copy of all your applications</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn-primary" onclick="exportCSV()">Export as CSV</button><button class="btn-ghost" onclick="showToast('JSON export coming soon!','success')">Export as JSON</button></div>
+              </div>
+              <div class="settings-card">
+                <div class="settings-card-title">Import Data</div><div class="settings-card-desc">Bring in applications from other tools</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn-ghost" onclick="showToast('CSV import coming soon!','success')">Import CSV</button><button class="btn-ghost" onclick="showToast('LinkedIn import coming soon!','success')">From LinkedIn</button></div>
+              </div>
+              <div class="settings-card" style="border-color:rgba(255,107,107,.2)">
+                <div class="settings-card-title" style="color:var(--red)">Danger Zone</div><div class="settings-card-desc">Permanently delete all your data.</div>
+                <button class="btn-ghost btn-danger" onclick="confirmClearAll()" style="margin-right:10px">Clear All Applications</button>
+                <button class="btn-ghost btn-danger" onclick="showToast('Account deletion email sent.','success')">Delete Account</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ABOUT PAGE ── -->
+    <div class="page" id="page-about">
+      <div class="page-body" style="max-width:720px">
+        <div class="about-hero">
+          <div class="about-logo-big"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px">MJA — My Job Applications</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:4px">Version 2.0.0 · Built for job seekers everywhere</div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-top:8px">A full-featured job application tracker to help you stay organised, prepared, and confident throughout your job search.</div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="btn-primary" onclick="startTour()" style="font-size:12px;padding:7px 14px">🗺️ Start Guided Tour</button>
+              <button class="btn-ghost" onclick="showTerms()" style="font-size:12px">Terms</button>
+              <button class="btn-ghost" onclick="showPrivacy()" style="font-size:12px">Privacy</button>
+            </div>
+          </div>
+        </div>
+        <div class="about-grid">
+          <div class="about-card"><div style="font-size:22px;margin-bottom:8px">📋</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px">Track Everything</div><div style="font-size:12px;color:var(--text2);line-height:1.6">Companies, roles, statuses, salary, contacts — all organised in one place.</div></div>
+          <div class="about-card"><div style="font-size:22px;margin-bottom:8px">✨</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px">Smart Fill</div><div style="font-size:12px;color:var(--text2);line-height:1.6">Paste a JD or upload a file — company, role, salary &amp; skills fill automatically.</div></div>
+          <div class="about-card"><div style="font-size:22px;margin-bottom:8px">👥</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px">Team Workspaces</div><div style="font-size:12px;color:var(--text2);line-height:1.6">Share your hunt with friends or cohorts via invite-code workspaces.</div></div>
+        </div>
+        <div class="settings-card" style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:13px">All Features</div>
+          <div>
+            <div class="feature-item"><div class="feature-check">✓</div>Kanban board &amp; Table view</div>
+            <div class="feature-item"><div class="feature-check">✓</div>✨ Smart Fill — paste JD or upload file to auto-fill fields</div>
+            <div class="feature-item"><div class="feature-check">✓</div>🗑️ Clear All — delete all applications with confirmation</div>
+            <div class="feature-item"><div class="feature-check">✓</div>🗺️ Step-by-step guided tour for new users</div>
+            <div class="feature-item"><div class="feature-check">✓</div>Interview round tracker (DSA, System Design, HR…)</div>
+            <div class="feature-item"><div class="feature-check">✓</div>Analytics — response rate, status &amp; source charts</div>
+            <div class="feature-item"><div class="feature-check">✓</div>Public profile / job portfolio page</div>
+            <div class="feature-item"><div class="feature-check">✓</div>Team workspaces with invite codes</div>
+            <div class="feature-item"><div class="feature-check">✓</div>CSV export of all applications</div>
+            <div class="feature-item"><div class="feature-check">✓</div>Dark / Light / System theme</div>
+            <div class="feature-item"><div class="feature-check">✓</div>Terms of Service &amp; Privacy Policy</div>
+            <div class="feature-item"><div class="feature-check">✓</div>Secure auth with email &amp; password</div>
+            <div class="feature-item"><div class="feature-check">✓</div>Mobile-responsive layout</div>
+          </div>
+        </div>
+        <div class="settings-card" style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:13px">Changelog</div>
+          <div class="changelog-item"><span class="changelog-ver">v2.0.0</span><span class="changelog-date">March 2025</span><div class="changelog-note">✨ Smart Fill (JD paste + PDF upload), 🗑️ Clear All with confirmation, 🗺️ guided tour (10 steps), full Terms of Service &amp; Privacy Policy, "Other" source description field, improved toolbar layout.</div></div>
+          <div class="changelog-item"><span class="changelog-ver">v1.0.0</span><span class="changelog-date">February 2025</span><div class="changelog-note">Kanban + Table views, interview rounds, analytics, workspaces, theme system, auth, CSV export.</div></div>
+          <div class="changelog-item"><span class="changelog-ver">v0.1.0</span><span class="changelog-date">January 2025</span><div class="changelog-note">Prototype with localStorage.</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-area -->
+</div><!-- /app-shell -->
+
+<!-- ═══ ADD / EDIT APPLICATION MODAL ══════════════════════════════ -->
+<div class="modal-overlay" id="appModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div><div class="modal-title" id="modalTitle">Add Application</div><div class="modal-sub" id="modalSub">Fill in details or use Smart Fill ✨</div></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="field"><div class="field-label">Company *</div><input class="field-input" id="f_company" placeholder="Google, Razorpay, Stripe…"></div>
+      <div class="field"><div class="field-label">Job Role *</div><input class="field-input" id="f_role" placeholder="Frontend Engineer, SDE-2…"></div>
+      <div class="field"><div class="field-label">Status</div><select class="field-input" id="f_status"><option>Applied</option><option>Screening</option><option>Interview</option><option>Offer</option><option>Rejected</option><option>Ghosted</option></select></div>
+      <div class="field"><div class="field-label">Priority</div><select class="field-input" id="f_priority"><option>High</option><option>Medium</option><option>Low</option></select></div>
+      <div class="field"><div class="field-label">Applied Date</div><input class="field-input" id="f_date" type="date"></div>
+      <div class="field"><div class="field-label">Salary Range</div><input class="field-input" id="f_salary" placeholder="₹12–18 LPA or $90k–120k"></div>
+      <div class="field"><div class="field-label">Location</div><input class="field-input" id="f_location" placeholder="Bengaluru / Remote"></div>
+      <div class="field"><div class="field-label">Work Type</div><select class="field-input" id="f_worktype"><option>Remote</option><option>Hybrid</option><option>On-site</option></select></div>
+      <div class="field">
+        <div class="field-label">Source</div>
+        <select class="field-input" id="f_source" onchange="toggleOtherSource(this.value)">
+          <option>LinkedIn</option><option>Naukri</option><option>Indeed</option><option>Glassdoor</option><option>Company Website</option><option>Referral</option><option>AngelList</option><option>Twitter/X</option><option>Internshala</option><option>Wellfound</option><option>Campus</option><option>WhatsApp</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field" id="f_source_other_wrap" style="display:none">
+        <div class="field-label" style="display:flex;align-items:center;gap:6px"><span style="color:var(--accent)">↳</span> Specify Source</div>
+        <input class="field-input" id="f_source_other" placeholder="e.g. Instahyre, WhatsApp group, Campus placement…" autocomplete="off">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Where exactly did you find this job?</div>
+      </div>
+      <div class="field"><div class="field-label">Job URL</div><input class="field-input" id="f_url" type="url" placeholder="https://company.com/jobs/…"></div>
+      <div class="field"><div class="field-label">Contact Name</div><input class="field-input" id="f_contact" placeholder="Recruiter / Hiring Manager"></div>
+      <div class="field"><div class="field-label">Resume Version</div><input class="field-input" id="f_resume" placeholder="v3_sde2.pdf"></div>
+      <div class="field"><div class="field-label">Next Action Date</div><input class="field-input" id="f_nextdate" type="date"></div>
+      <div class="field form-full"><div class="field-label">Skills Required (comma-separated)</div><input class="field-input" id="f_skills" placeholder="React, TypeScript, Node.js, System Design…"></div>
+      <div class="field form-full"><div class="field-label">📚 What to Learn / Prepare</div><textarea class="field-input textarea" id="f_learn" rows="2" placeholder="Topics to study, LeetCode patterns, company-specific prep…"></textarea></div>
+      <div class="field form-full"><div class="field-label">Interview Notes</div><textarea class="field-input textarea" id="f_notes" rows="2" placeholder="Round 1 DSA on Mar 10, feedback, next steps…"></textarea></div>
+      <div class="field form-full"><div class="field-label">Next Action</div><input class="field-input" id="f_next" placeholder="Follow up on March 25, prepare for technical round…"></div>
+      <div class="field form-full">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2)">
+          <input type="checkbox" id="f_public" style="accent-color:var(--accent);width:15px;height:15px">
+          Show this application on my public profile
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost btn-danger" id="deleteBtn" style="display:none;margin-right:auto" onclick="deleteApp()">Delete</button>
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveApp()">Save Application</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+</body>
+</html>
