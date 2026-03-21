@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MJA — My Job Applications</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script>
+/* ================================================================
+   MJA — My Job Applications  v4.0
+   All JS is in <head> — every function is globally available
+   before any onclick handler can fire.
+   Rule: NEVER access .style / .classList without a null guard.
+================================================================ */
+
+/* ── CONSTANTS ── */
+const SC={Applied:'#6c63ff',Screening:'#f7971e',Interview:'#38f9d7',Offer:'#43e97b',Rejected:'#ff6b6b',Ghosted:'#8888a8'};
+const SB={Applied:'rgba(108,99,255,.13)',Screening:'rgba(247,151,30,.13)',Interview:'rgba(56,249,215,.13)',Offer:'rgba(67,233,123,.13)',Rejected:'rgba(255,107,107,.13)',Ghosted:'rgba(136,136,168,.13)'};
+const PC={High:'#ff6b6b',Medium:'#f7971e',Low:'#8888a8'};
+const PB={High:'rgba(255,107,107,.14)',Medium:'rgba(247,151,30,.14)',Low:'rgba(136,136,168,.14)'};
+const STATUSES=['Applied','Screening','Interview','Offer','Rejected','Ghosted'];
+const SOURCES=['LinkedIn','Naukri','Indeed','Glassdoor','Company Website','Referral','AngelList','Twitter/X','Internshala','Wellfound','Campus','WhatsApp','Other'];
+
+/* ── SAFE DOM HELPER — never crashes on null ── */
+function $(id){return document.getElementById(id);}
+function setDisplay(id,v){var e=$(id);if(e)e.style.display=v;}
+function setText(id,v){var e=$(id);if(e)e.textContent=v;}
+function setVal(id,v){var e=$(id);if(e)e.value=v;}
+function getVal(id){var e=$(id);return e?e.value:'';}
+function setClass(id,cls,on){var e=$(id);if(e)e.classList.toggle(cls,on);}
+
+/* ── UTILS ── */
+function uid(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(d){if(!d)return'—';try{return new Date(d+'T12:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}catch(e){return d;}}
+function fmtShort(d){if(!d)return'—';try{return new Date(d+'T12:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'});}catch(e){return d;}}
+function genCode(){return Math.random().toString(36).slice(2,8).toUpperCase();}
+
+/* ── SAMPLE DATA ── */
+var apps=JSON.parse(localStorage.getItem('mja_v6_apps')||'null')||[
+  {id:uid(),company:'Google',role:'Senior Frontend Engineer',status:'Interview',priority:'High',date:'2025-03-01',salary:'₹35–45 LPA',location:'Bengaluru',worktype:'On-site',source:'LinkedIn',contact:'Priya Sharma',url:'',resume:'v3.pdf',skills:['React','TypeScript','GraphQL'],learn:'Review LLD, system design.',notes:'Round 1 cleared.',next:'Prepare system design',nextdate:'2025-03-18',isPublic:true,rounds:[{n:1,type:'DSA',status:'Completed',platform:'HackerRank',notes:'Cleared.'},{n:2,type:'System Design',status:'Scheduled',platform:'Google Meet',notes:''}]},
+  {id:uid(),company:'Flipkart',role:'SDE-2 Frontend',status:'Screening',priority:'High',date:'2025-03-05',salary:'₹28–38 LPA',location:'Bengaluru',worktype:'Hybrid',source:'Naukri',contact:'Ravi Kumar',url:'',resume:'v3.pdf',skills:['React','Redux','Node.js'],learn:'Review Redux Toolkit.',notes:'Screen call Mar 22.',next:'Prepare phone screen',nextdate:'2025-03-22',isPublic:false,rounds:[]},
+  {id:uid(),company:'Atlassian',role:'Frontend Engineer',status:'Applied',priority:'Medium',date:'2025-03-08',salary:'$90k–120k',location:'Remote',worktype:'Remote',source:'Company Website',contact:'',url:'https://atlassian.com/careers',resume:'v2.pdf',skills:['React','TypeScript'],learn:'Learn Atlaskit.',notes:'Applied via careers.',next:'Wait for response',nextdate:'',isPublic:true,rounds:[]},
+  {id:uid(),company:'Razorpay',role:'UI Engineer',status:'Offer',priority:'High',date:'2025-02-20',salary:'₹30–40 LPA',location:'Bengaluru',worktype:'Hybrid',source:'Referral',contact:'Neha Joshi',url:'',resume:'v3.pdf',skills:['React','Vue','Payments'],learn:'PCI DSS basics.',notes:'Offer received!',next:'Decide by Mar 25',nextdate:'2025-03-25',isPublic:true,rounds:[{n:1,type:'DSA',status:'Completed',platform:'HackerRank',notes:'Cleared'},{n:2,type:'HR',status:'Completed',platform:'Phone',notes:'Offer!'}]},
+  {id:uid(),company:'Swiggy',role:'Senior React Developer',status:'Rejected',priority:'Medium',date:'2025-02-15',salary:'₹22–30 LPA',location:'Bengaluru',worktype:'Hybrid',source:'LinkedIn',contact:'',url:'',resume:'v2.pdf',skills:['React','Node.js','PWA'],learn:'Performance.',notes:'Rejected after R2.',next:'Practice LLD',nextdate:'',isPublic:false,rounds:[]},
+  {id:uid(),company:'Stripe',role:'Software Engineer – Frontend',status:'Applied',priority:'High',date:'2025-03-10',salary:'$130k–160k',location:'Remote (US)',worktype:'Remote',source:'Wellfound',contact:'',url:'https://stripe.com/jobs',resume:'v3.pdf',skills:['TypeScript','React','APIs'],learn:'Stripe API docs.',notes:'Long process expected.',next:'No action yet',nextdate:'',isPublic:true,rounds:[]},
+  {id:uid(),company:'Zomato',role:'Frontend Lead',status:'Ghosted',priority:'Low',date:'2025-02-01',salary:'₹25–35 LPA',location:'Gurugram',worktype:'Hybrid',source:'LinkedIn',contact:'HR Team',url:'',resume:'',skills:['React','GraphQL'],learn:'',notes:'No response.',next:'Move on',nextdate:'',isPublic:false,rounds:[]}
+];
+function saveApps(){localStorage.setItem('mja_v6_apps',JSON.stringify(apps));}
+
+var workspaces=JSON.parse(localStorage.getItem('mja_v6_ws')||'[]');
+function saveWS(){localStorage.setItem('mja_v6_ws',JSON.stringify(workspaces));}
+
+/* ── STATE ── */
+var currentUser=JSON.parse(localStorage.getItem('mja_v6_user')||'null')||null;
+var editingId=null,currentView='kanban',activeFilter='';
+var currentTheme=localStorage.getItem('mja_theme')||'dark';
+function saveUser(){localStorage.setItem('mja_v6_user',JSON.stringify(currentUser));}
+
+/* ================================================================
+   AUTH — SIGN IN
+================================================================ */
+function switchTab(tab){
+  setDisplay('formSignin', tab==='signin'?'block':'none');
+  setDisplay('formSignup', tab==='signup'?'block':'none');
+  setClass('tabSignin','active',tab==='signin');
+  setClass('tabSignup','active',tab==='signup');
+  /* hide OTP screen, show divider/demo */
+  setDisplay('otpScreen','none');
+  setDisplay('authDivider','flex');
+  setDisplay('demoBtn','block');
+}
+
+function switchLoginMethod(m){
+  setDisplay('pwPanel',  m==='pw' ?'block':'none');
+  setDisplay('otpPanel', m==='otp'?'block':'none');
+  setClass('btnPw', 'active', m==='pw');
+  setClass('btnOtp','active', m==='otp');
+}
+
+/* Eye icon SVGs */
+var EYE_ON='<svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>';
+var EYE_OFF='<svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/><path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.064 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/></svg>';
+
+function togglePass(inputId, btn){
+  var inp=$(inputId);
+  if(!inp||!btn)return;
+  var show=inp.type==='text';
+  inp.type=show?'password':'text';
+  btn.innerHTML=show?EYE_ON:EYE_OFF;
+}
+
+/* Password strength */
+function checkPassStrength(val){
+  var bar=$('passBar'),fill=$('passFill'),lbl=$('passLbl');
+  if(!bar)return;
+  if(!val){bar.style.display='none';return;}
+  bar.style.display='block';
+  var s=0;
+  if(val.length>=8)s++;if(val.length>=12)s++;
+  if(/[A-Z]/.test(val))s++;if(/[0-9]/.test(val))s++;if(/[^A-Za-z0-9]/.test(val))s++;
+  var lvs=[{p:'20%',c:'#ff6b6b',t:'Very weak'},{p:'40%',c:'#f7971e',t:'Weak'},{p:'60%',c:'#f7971e',t:'Fair'},{p:'80%',c:'#38f9d7',t:'Strong'},{p:'100%',c:'#43e97b',t:'Very strong'}];
+  var lv=lvs[Math.min(s,4)];
+  if(fill){fill.style.width=lv.p;fill.style.background=lv.c;}
+  if(lbl){lbl.textContent=lv.t;lbl.style.color=lv.c;}
+}
+
+/* Confirm password live feedback */
+function checkConfirmPass(){
+  var passEl=$('suPass'), p2El=$('suPass2'), hint=$('passMatchHint');
+  if(!passEl||!p2El)return;
+  var pass=passEl.value, pass2=p2El.value;
+  if(!pass2){if(hint)hint.style.display='none'; p2El.style.borderColor=''; return;}
+  var match=(pass===pass2);
+  p2El.style.borderColor=match?'var(--green)':'var(--red)';
+  if(hint){
+    hint.style.display='block';
+    hint.textContent=match?'✓ Passwords match':'✗ Passwords do not match';
+    hint.style.color=match?'var(--green)':'var(--red)';
+  }
+}
+
+/* Sign In — Password */
+function doSignIn(){
+  var email=getVal('siEmail').trim(), pass=getVal('siPass');
+  var err=$('siErr');
+  if(!email||!pass){if(err){err.style.display='block';err.textContent='Please fill all fields.';} return;}
+  if(err)err.style.display='none';
+  currentUser={name:email.split('@')[0].replace(/[._-]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}),email:email,username:email.split('@')[0].toLowerCase()};
+  saveUser(); launchApp();
+}
+
+/* Sign In — OTP */
+var _otp={email:'',code:'',expires:0};
+function sendOTP(){
+  var emailEl=$('otpEmail'), statusEl=$('otpStatus'), btn=$('sendOtpBtn');
+  if(!emailEl)return;
+  var email=emailEl.value.trim();
+  if(!email||!email.includes('@')){
+    if(statusEl){statusEl.style.display='block';statusEl.style.color='var(--red)';statusEl.textContent='Enter a valid email address.';}
+    return;
+  }
+  var code=String(Math.floor(100000+Math.random()*900000));
+  _otp={email:email,code:code,expires:Date.now()+5*60*1000};
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  setTimeout(function(){
+    if(btn){btn.disabled=false;btn.textContent='Resend OTP';}
+    if(statusEl){
+      statusEl.style.display='block';statusEl.style.color='var(--green)';
+      statusEl.innerHTML='OTP sent to <strong>'+esc(email)+'</strong><br><span style="font-size:11px;color:var(--text3)">Demo code: <strong style="color:var(--accent);letter-spacing:2px">'+code+'</strong></span>';
+    }
+    setDisplay('otpStep1','none'); setDisplay('otpStep2','block');
+    var ci=$('otpCode'); if(ci){ci.value=code;ci.focus();}
+  },800);
+}
+function verifyOTP(){
+  var entered=getVal('otpCode').trim(), err=$('otpErr');
+  if(!entered||entered.length!==6){if(err){err.style.display='block';err.textContent='Enter the 6-digit code.';} return;}
+  if(Date.now()>_otp.expires){if(err){err.style.display='block';err.textContent='OTP expired. Click Resend.';} return;}
+  if(entered!==_otp.code){if(err){err.style.display='block';err.textContent='Incorrect code. Try again.';} return;}
+  if(err)err.style.display='none';
+  currentUser={name:_otp.email.split('@')[0].replace(/[._-]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}),email:_otp.email,username:_otp.email.split('@')[0].toLowerCase()};
+  _otp={email:'',code:'',expires:0}; saveUser(); launchApp();
+}
+function backToOtpEmail(){
+  setDisplay('otpStep1','block'); setDisplay('otpStep2','none');
+  var err=$('otpErr'); if(err)err.style.display='none';
+  var btn=$('sendOtpBtn'); if(btn){btn.disabled=false;btn.textContent='Send OTP →';}
+}
+
+/* ================================================================
+   CREATE ACCOUNT — 3-STEP FLOW
+================================================================ */
+var _su={name:'',username:'',email:'',mobile:'',cc:'+91',channel:'email',code:'',expires:0};
+var _suTimer=null;
+
+/* STEP 1 → validate → go step 2 */
+function suNext(){
+  /* Safely read all fields */
+  var nameEl=$('suName'), emailEl=$('suEmail'), passEl=$('suPass'), p2El=$('suPass2'), err=$('suErr');
+  /* Guard: if any critical element missing, abort silently */
+  if(!nameEl||!emailEl||!passEl||!p2El||!err)return;
+
+  var name=nameEl.value.trim();
+  var email=emailEl.value.trim();
+  var pass=passEl.value;
+  var pass2=p2El.value;
+  var userEl=$('suUsername'), mobileEl=$('suMobile'), ccEl=$('suCC');
+  var username=userEl?userEl.value.trim():'';
+  var mobile=mobileEl?mobileEl.value.trim():'';
+  var cc=ccEl?ccEl.value:'+91';
+
+  /* Validation — show error and return on failure */
+  function fail(msg, focusId){
+    err.style.display='block'; err.textContent=msg;
+    var fe=$(focusId); if(fe)fe.focus();
+  }
+  if(!name)               {fail('Full name is required.','suName');return;}
+  if(!email||!email.includes('@')){fail('Enter a valid email address.','suEmail');return;}
+  if(pass.length<8)        {fail('Password must be at least 8 characters.','suPass');return;}
+  if(!pass2)               {fail('Please confirm your password.','suPass2');return;}
+  if(pass!==pass2){
+    fail('Passwords do not match. Please re-enter your confirm password.','suPass2');
+    p2El.style.borderColor='var(--red)'; p2El.select(); return;
+  }
+
+  /* All good */
+  err.style.display='none'; p2El.style.borderColor='';
+  var hint=$('passMatchHint'); if(hint)hint.style.display='none';
+
+  _su.name=name;
+  _su.username=username||email.split('@')[0].toLowerCase().replace(/[^a-z0-9._-]/g,'');
+  _su.email=email; _su.mobile=mobile; _su.cc=cc;
+
+  /* Update step 2 UI */
+  setText('vEmailAddr', email);
+  var mOpt=$('vOptMobile');
+  if(mobile&&mobile.length>=7){
+    var masked=mobile.slice(0,5)+'*'.repeat(mobile.length-5);
+    setText('vMobileAddr', cc+' '+masked);
+    if(mOpt)mOpt.style.display='flex';
+  } else {
+    if(mOpt)mOpt.style.display='none';
+  }
+  suSelectChannel('email');
+  setDisplay('suStep1','none'); setDisplay('suStep2','block');
+}
+
+function suBack1(){setDisplay('suStep2','none'); setDisplay('suStep1','block');}
+
+/* Channel selection */
+var _suCh='email';
+function suSelectChannel(ch){
+  _suCh=ch;
+  ['email','mobile'].forEach(function(c){
+    setClass('vOpt_'+c,'selected',c===ch);
+    setClass('vRadio_'+c,'checked',c===ch);
+  });
+}
+
+/* STEP 2 → send OTP → step 3 */
+function suSendOTP(){
+  var btn=$('suSendBtn'), err=$('suErr2');
+  if(err)err.style.display='none';
+  if(btn){btn.disabled=true; btn.textContent='Sending…';}
+  var code=String(Math.floor(100000+Math.random()*900000));
+  _su.channel=_suCh; _su.code=code; _su.expires=Date.now()+5*60*1000;
+  setTimeout(function(){
+    if(btn){btn.disabled=false; btn.textContent='Resend OTP';}
+    var isEmail=_suCh==='email';
+    setText('suOtpIcon', isEmail?'📧':'📱');
+    setText('suOtpTo', isEmail?'Sent to '+_su.email:'SMS sent to '+_su.cc+' '+_su.mobile);
+    setText('suOtpDemo', code);
+    /* clear boxes */
+    for(var i=0;i<6;i++){var b=$('sb'+i);if(b){b.value='';b.style.borderColor='var(--border)';b.style.color='var(--text)';}}
+    var e3=$('suErr3'); if(e3)e3.style.display='none';
+    setDisplay('suStep2','none'); setDisplay('suStep3','block');
+    _suStartTimer();
+    var first=$('sb0'); if(first)setTimeout(function(){first.focus();},80);
+    showToast('OTP sent! Demo code: '+code,'success');
+  },900);
+}
+function suBack2(){
+  setDisplay('suStep3','none'); setDisplay('suStep2','block');
+  if(_suTimer)clearInterval(_suTimer);
+}
+
+/* OTP box navigation */
+function sbInput(el,i){
+  el.value=el.value.replace(/\D/,'');
+  if(el.value&&i<5){var n=$('sb'+(i+1));if(n)n.focus();}
+  var all=''; for(var j=0;j<6;j++){var b=$('sb'+j);all+=b?b.value:'';}
+  if(all.length===6)setTimeout(suVerify,120);
+}
+function sbKey(e,i){
+  if(e.key==='Backspace'&&!e.target.value&&i>0){var p=$('sb'+(i-1));if(p)p.focus();}
+  if(e.key==='ArrowLeft'&&i>0){var p=$('sb'+(i-1));if(p)p.focus();}
+  if(e.key==='ArrowRight'&&i<5){var n=$('sb'+(i+1));if(n)n.focus();}
+}
+function sbPaste(e){
+  e.preventDefault();
+  var t=(e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+  for(var i=0;i<6;i++){var b=$('sb'+i);if(b)b.value=t[i]||'';}
+  var last=$('sb'+Math.min(t.length,5)); if(last)last.focus();
+  if(t.length===6)setTimeout(suVerify,120);
+}
+function _suStartTimer(){
+  if(_suTimer)clearInterval(_suTimer);
+  var el=$('suTimer');
+  _suTimer=setInterval(function(){
+    var left=Math.max(0,Math.floor((_su.expires-Date.now())/1000));
+    if(!el){clearInterval(_suTimer);return;}
+    if(left===0){el.textContent='Expired';el.style.color='var(--red)';clearInterval(_suTimer);}
+    else{var m=Math.floor(left/60),s=left%60;el.textContent=m+':'+(s<10?'0':'')+s;el.style.color='var(--text3)';}
+  },1000);
+}
+
+/* STEP 3 — verify & create account */
+function suVerify(){
+  var entered=''; for(var i=0;i<6;i++){var b=$('sb'+i);entered+=b?b.value:'';}
+  var err=$('suErr3'), btn=$('suVerifyBtn');
+  if(entered.length<6){if(err){err.style.display='block';err.textContent='Enter all 6 digits.';} return;}
+  if(Date.now()>_su.expires){if(err){err.style.display='block';err.textContent='OTP expired. Go back and resend.';} return;}
+  if(entered!==_su.code){
+    if(err){err.style.display='block';err.textContent='Incorrect code. Try again.';}
+    for(var i=0;i<6;i++){var b=$('sb'+i);if(b){b.style.borderColor='var(--red)';b.style.color='var(--red)';(function(box){setTimeout(function(){box.style.borderColor='var(--border)';box.style.color='var(--text)';},1400);})(b);}}
+    return;
+  }
+  if(err)err.style.display='none';
+  if(_suTimer)clearInterval(_suTimer);
+  if(btn){btn.textContent='Creating account…';btn.disabled=true;}
+  setTimeout(function(){
+    currentUser={name:_su.name,username:_su.username,email:_su.email,mobile:_su.mobile,cc:_su.cc};
+    _su={name:'',username:'',email:'',mobile:'',cc:'+91',channel:'email',code:'',expires:0};
+    saveUser(); showToast('Welcome, '+currentUser.name+'! 🎉','success'); launchApp();
+  },500);
+}
+
+function demoLogin(){
+  currentUser={name:'Demo User',username:'demo',email:'demo@mja.app'};
+  saveUser(); launchApp();
+}
+
+function launchApp(){
+  setDisplay('loginScreen','none');
+  setDisplay('appShell','grid');
+  applyTheme(currentTheme);
+  updateUserUI(); renderAll(); showPage('dashboard');
+  if(!localStorage.getItem('mja_tour_seen'))setTimeout(startTour,900);
+}
+
+function doSignOut(){
+  setDisplay('appShell','none');
+  setDisplay('loginScreen','flex');
+  /* Reset auth UI */
+  switchTab('signin'); switchLoginMethod('pw');
+  setVal('siEmail',''); setVal('siPass','');
+  setDisplay('otpStep1','block'); setDisplay('otpStep2','none');
+  ['suStep1','suStep2','suStep3'].forEach(function(id,i){setDisplay(id,i===0?'block':'none');});
+  /* Reset signup form */
+  ['suName','suUsername','suEmail','suMobile','suPass','suPass2'].forEach(function(id){setVal(id,'');});
+  var passBar=$('passBar'); if(passBar)passBar.style.display='none';
+  var hint=$('passMatchHint'); if(hint)hint.style.display='none';
+  showToast('Signed out','success');
+}
+
+/* ================================================================
+   THEME
+================================================================ */
+function applyTheme(t){
+  currentTheme=t; localStorage.setItem('mja_theme',t);
+  var a=t; if(t==='system')a=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  document.documentElement.setAttribute('data-theme',a);
+  var btn=$('themeBtn');
+  if(btn)btn.innerHTML=a==='light'
+    ?'<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>'
+    :'<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>';
+  document.querySelectorAll('.theme-opt').forEach(function(el){el.classList.remove('active');});
+  setClass('th_'+t,'active',true);
+}
+function setTheme(t){applyTheme(t);showToast('Theme: '+t[0].toUpperCase()+t.slice(1),'success');}
+function cycleTheme(){var o=['dark','light','system'];setTheme(o[(o.indexOf(currentTheme)+1)%3]);}
+if(window.matchMedia)window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){if(currentTheme==='system')applyTheme('system');});
+
+/* ================================================================
+   USER UI
+================================================================ */
+function getUN(){return((currentUser&&currentUser.username)||'user').toLowerCase().replace(/[^a-z0-9._-]/g,'').slice(0,30)||'user';}
+function getInitials(){return((currentUser&&currentUser.name)||'?').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();}
+
+function updateUserUI(){
+  var ini=getInitials(), un=getUN(), url='mja.app/profile/'+un;
+  ['sidebarAv','settingsAv','pubAv'].forEach(function(id){setText(id,ini);});
+  setText('sidebarName',(currentUser&&currentUser.name)||'');
+  setText('sidebarEmail',(currentUser&&currentUser.email)||'');
+  setText('settingsName',(currentUser&&currentUser.name)||'');
+  setText('settingsEmail',(currentUser&&currentUser.email)||'');
+  setText('pubName',(currentUser&&currentUser.name)||'');
+  setText('pubHandle','@'+un);
+  var ub=$('pubUrlBanner');
+  if(ub)ub.innerHTML='🌐 Public URL: <strong>'+url+'</strong> — visible to anyone with this link';
+  var pd=$('privDesc'); if(pd)pd.textContent='Control what\'s visible at '+url;
+  setVal('sNameInp',(currentUser&&currentUser.name)||'');
+  setVal('sEmailInp',(currentUser&&currentUser.email)||'');
+  setVal('sUnInp',un);
+}
+function saveAccountSettings(){
+  var n=getVal('sNameInp').trim(), e=getVal('sEmailInp').trim(), u=getVal('sUnInp').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'');
+  if(!currentUser)return;
+  if(n)currentUser.name=n; if(e)currentUser.email=e; if(u)currentUser.username=u;
+  saveUser(); updateUserUI(); showToast('Account updated!','success');
+}
+
+/* ================================================================
+   NAVIGATION
+================================================================ */
+var PAGE_TITLES={dashboard:'Dashboard',analytics:'Analytics',workspace:'Workspaces',profile:'Public Profile',settings:'Settings',about:'About MJA'};
+function showPage(id){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  var pg=$('pg_'+id); if(pg)pg.classList.add('active');
+  var nav=$('nav_'+id); if(nav)nav.classList.add('active');
+  setText('topTitle',PAGE_TITLES[id]||id);
+  if(id==='analytics')renderAnalytics();
+  if(id==='profile')renderProfile();
+  if(id==='workspace')renderWorkspacePage();
+  var sb=$('sidebar'); if(sb)sb.classList.remove('mobile-open');
+}
+function toggleSidebar(){var sb=$('sidebar');if(sb)sb.classList.toggle('mobile-open');}
+
+/* ================================================================
+   DATA / RENDER
+================================================================ */
+function getFiltered(){
+  var q=getVal('searchQ').toLowerCase();
+  var fs=($('fStatus')||{value:''}).value||activeFilter;
+  var fp=($('fPriority')||{value:''}).value||'';
+  var sort=($('fSort')||{value:'new'}).value||'new';
+  var list=apps.filter(function(a){
+    if(fs&&a.status!==fs)return false;
+    if(fp&&a.priority!==fp)return false;
+    if(q){
+      var haystack=[a.company,a.role].concat(a.skills||[]).concat([a.location||'',a.source||'',a.contact||'']).join(' ').toLowerCase();
+      if(!haystack.includes(q))return false;
+    }
+    return true;
+  });
+  list.sort(function(a,b){
+    if(sort==='new')return (new Date(b.date||0))-(new Date(a.date||0));
+    if(sort==='old')return (new Date(a.date||0))-(new Date(b.date||0));
+    if(sort==='co') return a.company.localeCompare(b.company);
+    return STATUSES.indexOf(a.status)-STATUSES.indexOf(b.status);
+  });
+  return list;
+}
+
+function renderAll(){
+  renderSideStats(); renderStatsBar(); renderDashboard();
+  setText('navBadge',apps.length);
+  setText('pubCount',apps.filter(function(a){return a.isPublic;}).length);
+}
+
+function renderSideStats(){
+  var el=$('sideStats'); if(!el)return;
+  el.innerHTML=STATUSES.map(function(s){
+    var n=apps.filter(function(a){return a.status===s;}).length;
+    return '<div class="side-stat" onclick="toggleFilter(\''+s+'\')"><span style="display:flex;align-items:center;gap:7px;color:var(--text2)"><span style="width:6px;height:6px;border-radius:50%;background:'+SC[s]+';flex-shrink:0"></span>'+s+'</span><span style="font-family:\'Syne\',sans-serif;font-weight:700;font-size:12px;color:'+SC[s]+'">'+n+'</span></div>';
+  }).join('');
+}
+
+function renderStatsBar(){
+  var bar=$('statsBar'); if(!bar)return;
+  bar.innerHTML='<div class="stat-pill" onclick="clearFilter()"><span class="stat-n" style="color:var(--text)">'+apps.length+'</span><span>Total</span></div>'+
+    STATUSES.map(function(s){
+      var n=apps.filter(function(a){return a.status===s;}).length;
+      return '<div class="stat-pill'+(activeFilter===s?' active-filter':'')+'" onclick="toggleFilter(\''+s+'\')"><div class="stat-dot" style="background:'+SC[s]+'"></div><span class="stat-n" style="color:'+SC[s]+'">'+n+'</span><span>'+s+'</span></div>';
+    }).join('');
+}
+
+function toggleFilter(s){
+  activeFilter=(activeFilter===s)?'':s;
+  var fs=$('fStatus'); if(fs)fs.value=activeFilter;
+  renderAll();
+}
+function clearFilter(){activeFilter=''; var fs=$('fStatus');if(fs)fs.value=''; renderAll();}
+
+function setView(v){
+  currentView=v;
+  setDisplay('kanbanView',v==='kanban'?'block':'none');
+  setDisplay('tableView',v==='table'?'block':'none');
+  setClass('vKanban','active',v==='kanban');
+  setClass('vTable','active',v==='table');
+  renderDashboard();
+}
+
+function renderDashboard(){if(currentView==='kanban')renderKanban();else renderTable();}
+
+function renderKanban(){
+  var list=getFiltered(), brd=$('kanbanView'); if(!brd)return;
+  var compact=$('compactCards')&&$('compactCards').checked;
+  var showSal=!$('showSalary')||$('showSalary').checked;
+  brd.innerHTML='<div class="kanban-board">'+STATUSES.map(function(status){
+    var cols=list.filter(function(a){return a.status===status;});
+    return '<div class="k-col"><div class="k-header" style="border-left:3px solid '+SC[status]+'"><span>'+status+'</span><span class="k-count">'+cols.length+'</span></div><div class="k-cards">'+(cols.length?cols.map(function(a){return cardHTML(a,compact,showSal);}).join(''):'<div class="k-empty">Empty</div>')+'</div></div>';
+  }).join('')+'</div>';
+}
+
+function cardHTML(a,compact,showSal){
+  var tags=(a.skills||[]).slice(0,compact?2:3), extra=(a.skills||[]).length-tags.length;
+  return '<div class="app-card c-'+a.status.toLowerCase()+'" onclick="openDetail(\''+a.id+'\')">'+
+    '<div class="card-co">'+esc(a.company)+'</div>'+
+    '<div class="card-role">'+esc(a.role)+'</div>'+
+    (!compact&&showSal&&a.salary?'<div style="font-size:11px;color:var(--green);margin-bottom:6px">'+esc(a.salary)+'</div>':'')+
+    '<div class="card-foot"><span class="card-date">'+fmtShort(a.date)+'</span><span class="pri-badge" style="background:'+PB[a.priority]+';color:'+PC[a.priority]+'">'+a.priority+'</span></div>'+
+    (!compact&&tags.length?'<div class="card-tags">'+tags.map(function(t){return'<span class="ctag">'+esc(t)+'</span>';}).join('')+(extra>0?'<span class="ctag">+'+extra+'</span>':'')+'</div>':'')+
+    (!compact&&a.next?'<div class="card-next">→ '+esc(a.next)+'</div>':'')+
+  '</div>';
+}
+
+function renderTable(){
+  var list=getFiltered(), el=$('tableView'); if(!el)return;
+  if(!list.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No applications found</div><div class="empty-desc">Adjust filters or add a new one.</div><button class="btn-primary" onclick="openAddModal()">+ Add Application</button></div>';return;}
+  el.innerHTML='<div class="tbl-wrap"><table><thead><tr><th>Company</th><th>Role</th><th>Status</th><th>Priority</th><th>Applied</th><th>Salary</th><th>Location</th><th>Source</th></tr></thead><tbody>'+
+    list.map(function(a){
+      return '<tr onclick="openDetail(\''+a.id+'\')">'+
+        '<td class="tc">'+esc(a.company)+'</td>'+
+        '<td style="color:var(--text2)">'+esc(a.role)+'</td>'+
+        '<td><span class="sbadge" style="color:'+SC[a.status]+';background:'+SB[a.status]+'">'+a.status+'</span></td>'+
+        '<td><span class="pri-badge" style="background:'+PB[a.priority]+';color:'+PC[a.priority]+'">'+a.priority+'</span></td>'+
+        '<td style="color:var(--text2)">'+fmtDate(a.date)+'</td>'+
+        '<td style="color:var(--green);font-size:12px">'+esc(a.salary||'—')+'</td>'+
+        '<td style="color:var(--text2)">'+esc(a.location||'—')+'</td>'+
+        '<td style="color:var(--text2)">'+esc(a.source||'—')+'</td>'+
+      '</tr>';
+    }).join('')+
+  '</tbody></table></div>';
+}
+
+/* ================================================================
+   SOURCE — OTHER
+================================================================ */
+function toggleOtherSrc(val){
+  var wrap=$('f_src_other_wrap');
+  if(!wrap)return;
+  if(val==='Other'){
+    wrap.style.display='block';
+    setTimeout(function(){var i=$('f_src_other');if(i)i.focus();},80);
+  } else {
+    wrap.style.display='none';
+    setVal('f_src_other','');
+  }
+}
+function getSrcVal(){
+  var sel=$('f_src'); if(!sel)return'';
+  if(sel.value==='Other'){var v=getVal('f_src_other').trim();return v?'Other: '+v:'Other';}
+  return sel.value;
+}
+function setSrcVal(source){
+  var sel=$('f_src'),oth=$('f_src_other'),wrap=$('f_src_other_wrap');
+  if(!sel)return;
+  if((source||'').startsWith('Other')){
+    sel.value='Other';
+    if(oth)oth.value=source.startsWith('Other: ')?source.slice(7):'';
+    if(wrap)wrap.style.display='block';
+  } else {
+    sel.value=SOURCES.includes(source)?source:'LinkedIn';
+    if(oth)oth.value='';
+    if(wrap)wrap.style.display='none';
+  }
+}
+
+/* ================================================================
+   ADD / EDIT MODAL
+================================================================ */
+function openAddModal(){
+  editingId=null;
+  setText('mTitle','Add Application'); setText('mSub','Fill in details or use Smart Fill ✨');
+  var delBtn=$('mDeleteBtn'); if(delBtn)delBtn.style.display='none';
+  var today=new Date().toISOString().split('T')[0];
+  var fields={f_co:'',f_role:'',f_status:'Applied',f_priority:'Medium',f_date:today,f_salary:'',f_location:'',f_worktype:'Remote',f_url:'',f_contact:'',f_resume:'',f_skills:'',f_learn:'',f_notes:'',f_next:'',f_nextdate:''};
+  Object.keys(fields).forEach(function(id){setVal(id,fields[id]);});
+  var pub=$('f_public'); if(pub)pub.checked=false;
+  setSrcVal('LinkedIn'); openModal();
+}
+function openEditModal(id){
+  var a=apps.find(function(x){return x.id===id;}); if(!a)return;
+  editingId=id;
+  setText('mTitle','Edit Application'); setText('mSub',a.company+' — '+a.role);
+  var delBtn=$('mDeleteBtn'); if(delBtn)delBtn.style.display='block';
+  var map={f_co:'company',f_role:'role',f_status:'status',f_priority:'priority',f_date:'date',f_salary:'salary',f_location:'location',f_worktype:'worktype',f_url:'url',f_contact:'contact',f_resume:'resume',f_learn:'learn',f_notes:'notes',f_next:'next',f_nextdate:'nextdate'};
+  Object.keys(map).forEach(function(id){setVal(id,a[map[id]]||'');});
+  setVal('f_skills',(a.skills||[]).join(', '));
+  var pub=$('f_public'); if(pub)pub.checked=!!a.isPublic;
+  setSrcVal(a.source); openModal();
+}
+function saveApp(){
+  var co=getVal('f_co').trim(), ro=getVal('f_role').trim();
+  if(!co||!ro){showToast('Company and Role are required!','error');return;}
+  var pub=$('f_public'); 
+  var data={company:co,role:ro,status:getVal('f_status'),priority:getVal('f_priority'),date:getVal('f_date'),salary:getVal('f_salary').trim(),location:getVal('f_location').trim(),worktype:getVal('f_worktype'),source:getSrcVal(),url:getVal('f_url').trim(),contact:getVal('f_contact').trim(),resume:getVal('f_resume').trim(),skills:getVal('f_skills').split(',').map(function(s){return s.trim();}).filter(Boolean),learn:getVal('f_learn').trim(),notes:getVal('f_notes').trim(),next:getVal('f_next').trim(),nextdate:getVal('f_nextdate'),isPublic:pub?pub.checked:false};
+  if(editingId){
+    var idx=apps.findIndex(function(a){return a.id===editingId;});
+    if(idx>-1)apps[idx]=Object.assign({},apps[idx],data);
+    showToast('Updated!','success');
+  } else {
+    apps.unshift(Object.assign({id:uid(),rounds:[]},data));
+    showToast('Application added!','success');
+  }
+  saveApps(); closeModal(); renderAll();
+}
+function deleteApp(){
+  if(!confirm('Delete this application?'))return;
+  apps=apps.filter(function(a){return a.id!==editingId;});
+  saveApps(); closeModal(); renderAll(); showToast('Deleted','success');
+}
+function openModal(){var m=$('appModal');if(m)m.classList.add('open');}
+function closeModal(){var m=$('appModal');if(m)m.classList.remove('open');}
+
+/* ================================================================
+   CLEAR ALL
+================================================================ */
+function confirmClearAll(){
+  if(!apps.length){showToast('No applications to delete.','error');return;}
+  var ov=document.createElement('div'); ov.className='modal-overlay'; ov.style.zIndex='200';
+  ov.innerHTML='<div class="modal" style="max-width:400px;text-align:center;padding:36px 32px">'+
+    '<div style="width:64px;height:64px;border-radius:50%;background:rgba(255,107,107,.12);border:2px solid rgba(255,107,107,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:28px">🗑️</div>'+
+    '<div style="font-family:\'Syne\',sans-serif;font-weight:800;font-size:18px;margin-bottom:8px">Delete All Applications?</div>'+
+    '<div style="font-size:13px;color:var(--text2);margin-bottom:6px">Permanently erase all <strong style="color:var(--text)">'+apps.length+' application'+(apps.length!==1?'s':'')+'</strong>.</div>'+
+    '<div style="font-size:12px;color:var(--red);margin-bottom:28px">⚠️ This cannot be undone.</div>'+
+    '<div style="display:flex;gap:10px">'+
+    '<button class="btn-ghost" style="flex:1;padding:11px" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>'+
+    '<button style="flex:1;padding:11px;border-radius:9px;background:var(--red);color:#fff;border:none;font-size:14px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer" onclick="doDeleteAll(this)">Delete All</button>'+
+    '</div></div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov); setTimeout(function(){ov.classList.add('open');},10);
+}
+function doDeleteAll(btn){
+  apps=[]; saveApps(); renderAll();
+  btn.closest('.modal-overlay').remove();
+  showToast('All applications cleared','success');
+}
+
+/* ================================================================
+   SMART FILL
+================================================================ */
+function openSmartFill(){
+  var ov=document.createElement('div'); ov.id='sfOv'; ov.className='modal-overlay'; ov.style.zIndex='170';
+  ov.innerHTML='<div class="modal" style="max-width:660px">'+
+    '<div class="modal-header"><div><div class="modal-title">✨ Smart Job Fill</div><div class="modal-sub">Paste a job description or upload a file — fields auto-fill</div></div>'+
+    '<button class="modal-close" onclick="document.getElementById(\'sfOv\').remove()">✕</button></div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:14px">'+
+    '<button class="sf-tab active" id="sfTabPaste" onclick="sfSw(\'paste\')">📋 Paste Text</button>'+
+    '<button class="sf-tab" id="sfTabFile" onclick="sfSw(\'file\')">📄 Upload File</button></div>'+
+    '<div id="sfPastePanel"><textarea id="sfText" class="sf-textarea" placeholder="Paste the full job description here…"></textarea></div>'+
+    '<div id="sfFilePanel" style="display:none">'+
+    '<div class="sf-drop" id="sfDrop" ondragover="event.preventDefault();this.classList.add(\'drag-over\')" ondragleave="this.classList.remove(\'drag-over\')" ondrop="sfDrop(event)" onclick="document.getElementById(\'sfFile\').click()">'+
+    '<div style="font-size:40px;margin-bottom:10px">📄</div>'+
+    '<div style="font-size:14px;font-weight:600;margin-bottom:4px">Drop file here or click to browse</div>'+
+    '<div style="font-size:12px;color:var(--text3)">.txt or .docx recommended</div>'+
+    '<input type="file" id="sfFile" accept=".txt,.docx" style="display:none" onchange="sfFileIn(this)">'+
+    '</div></div>'+
+    '<div id="sfErr" style="display:none;font-size:12px;color:var(--red);padding:9px 13px;background:rgba(255,107,107,.08);border-radius:8px;margin-top:10px;border:1px solid rgba(255,107,107,.2)"></div>'+
+    '<div class="modal-footer"><button class="btn-ghost" onclick="document.getElementById(\'sfOv\').remove()">Cancel</button>'+
+    '<button class="btn-primary" id="sfBtn" onclick="sfExtract()">✨ Extract & Fill</button></div></div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov); setTimeout(function(){ov.classList.add('open');},10);
+}
+function sfSw(t){
+  setDisplay('sfPastePanel',t==='paste'?'block':'none');
+  setDisplay('sfFilePanel',t==='file'?'block':'none');
+  setClass('sfTabPaste','active',t==='paste');
+  setClass('sfTabFile','active',t==='file');
+}
+function sfDrop(e){e.preventDefault();var d=$('sfDrop');if(d)d.classList.remove('drag-over');var f=e.dataTransfer.files[0];if(f)sfReadFile(f);}
+function sfFileIn(inp){if(inp.files[0])sfReadFile(inp.files[0]);}
+function sfReadFile(file){
+  var r=new FileReader();
+  r.onload=function(e){
+    var t=typeof e.target.result==='string'?e.target.result:'';
+    if(t.trim()){setVal('sfText',t);sfSw('paste');}
+  };
+  r.readAsText(file);
+}
+function sfExtract(){
+  var text=getVal('sfText').trim(), err=$('sfErr'), btn=$('sfBtn');
+  if(!text){if(err){err.style.display='block';err.textContent='Paste a job description first.';} return;}
+  if(err)err.style.display='none';
+  if(btn){btn.disabled=true;btn.innerHTML='⏳ Extracting…';}
+  setTimeout(function(){
+    var p=sfParse(text);
+    var ov=$('sfOv');if(ov)ov.remove();
+    openAddModal();
+    setTimeout(function(){
+      if(p.company)setVal('f_co',p.company);
+      if(p.role)setVal('f_role',p.role);
+      if(p.location)setVal('f_location',p.location);
+      if(p.salary)setVal('f_salary',p.salary);
+      if(p.skills)setVal('f_skills',p.skills);
+      if(p.contact)setVal('f_contact',p.contact);
+      if(p.url)setVal('f_url',p.url);
+      if(p.worktype){var wt=$('f_worktype');if(wt)wt.value=p.worktype;}
+      setSrcVal(p.source||'Other');
+      var n=[p.company,p.role,p.location,p.salary,p.skills].filter(Boolean).length;
+      showToast(n>0?'✨ Extracted '+n+' field'+(n!==1?'s':'')+'! Review and save.':'Could not extract. Try a fuller JD.',n>0?'success':'error');
+    },150);
+  },700);
+}
+function sfParse(text){
+  var r={};
+  function get(pats){for(var i=0;i<pats.length;i++){var m=text.match(pats[i]);if(m)return(m[1]||m[0]).trim().replace(/[,.:;|–\-]+$/,'').trim();}return'';}
+  r.company=get([/(?:company|employer)\s*[:\s–-]+([A-Za-z0-9 &.,'\-]{2,45})/i,/(?:at|join)\s+([A-Z][A-Za-z0-9 &.\-]{2,40})(?:\s|,|\n|!)/,/^([A-Z][A-Za-z0-9 &.\-]{2,35})\s+(?:is hiring|is looking|hiring)/m]);
+  r.role=get([/(?:position|role|title|opening for)\s*[:\s–-]+([^\n,|]{4,65})/i,/(?:hiring|seeking|looking for)\s+(?:a\s+|an\s+)?([^\n,|]{4,65})/i]);
+  if(r.role)r.role=r.role.replace(/^(a\s+|an\s+)/i,'').replace(/\s+at\s+.*/i,'').trim();
+  r.location=get([/(?:location|office|based in)\s*[:\s–-]+([^\n,|]{3,55})/i,/\b(Remote|Hybrid|On-site|Bengaluru|Bangalore|Mumbai|Hyderabad|Delhi|Chennai|Pune|Gurugram|Noida|New York|San Francisco|London|Berlin|Singapore)\b/i]);
+  r.salary=get([/(?:salary|ctc|pay|package)\s*[:\s–-]+([^\n]{3,50})/i,/([$₹€£]\s*[\d,]+(?:\s*[kK]|LPA)?(?:\s*[-–]+\s*[$₹€£]?\s*[\d,]+(?:\s*[kK]|LPA)?)?)/i]);
+  var wt=text.match(/\b(Remote|Hybrid|On-?site|WFH)\b/i);
+  if(wt){var v=wt[1].toLowerCase();r.worktype=v.includes('remote')||v.includes('wfh')?'Remote':v.includes('hybrid')?'Hybrid':'On-site';}
+  var SL=['React','Vue','Angular','Next.js','TypeScript','JavaScript','Node.js','Python','Django','Java','Spring','Go','Rust','PHP','GraphQL','REST','PostgreSQL','MySQL','MongoDB','Redis','AWS','GCP','Azure','Docker','Kubernetes','Git','HTML','CSS','Tailwind','Redux','Jest','Figma','System Design','DSA','Machine Learning','SQL','Kafka','Flutter','React Native','Swift','Kotlin'];
+  var skills=SL.filter(function(s){return new RegExp('\\b'+s.replace(/[.+]/g,'\\$&')+'\\b','i').test(text);});
+  if(skills.length)r.skills=skills.join(', ');
+  var em=text.match(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i);if(em)r.contact=em[0];
+  var url=text.match(/https?:\/\/[^\s"'<>]+/i);if(url)r.url=url[0].replace(/[.,)>]+$/,'');
+  if(/linkedin/i.test(text))r.source='LinkedIn';else if(/naukri/i.test(text))r.source='Naukri';else r.source='Other';
+  return r;
+}
+
+/* ================================================================
+   DETAIL VIEW
+================================================================ */
+function openDetail(id){
+  var a=apps.find(function(x){return x.id===id;});if(!a)return;
+  var ov=document.createElement('div');ov.className='modal-overlay';ov.style.zIndex='160';
+  var rHTML=(a.rounds||[]).length?'<div class="d-lbl">📅 Interview Rounds</div>'+(a.rounds||[]).map(function(r){return'<div class="round-row"><span class="round-n">R'+r.n+'</span><span style="font-weight:600;font-size:13px">'+esc(r.type)+'</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;color:'+(r.status==='Completed'?'#43e97b':r.status==='Scheduled'?'#38f9d7':'#f7971e')+';background:'+(r.status==='Completed'?'rgba(67,233,123,.12)':r.status==='Scheduled'?'rgba(56,249,215,.12)':'rgba(247,151,30,.12)')+'">'+r.status+'</span>'+(r.platform?'<span style="font-size:11px;color:var(--text3)">'+esc(r.platform)+'</span>':'')+'</div>';}).join(''):'';
+  ov.innerHTML='<div class="modal" style="max-width:600px">'+
+    '<div class="modal-header"><div><div class="modal-title">'+esc(a.company)+'</div><div class="modal-sub">'+esc(a.role)+'</div></div><button class="modal-close" onclick="this.closest(\'.modal-overlay\').remove()">✕</button></div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">'+
+    '<span class="sbadge" style="color:'+SC[a.status]+';background:'+SB[a.status]+'">'+a.status+'</span>'+
+    '<span class="pri-badge" style="background:'+PB[a.priority]+';color:'+PC[a.priority]+'">'+a.priority+' Priority</span>'+
+    (a.worktype?'<span style="font-size:11px;padding:3px 10px;border-radius:100px;background:var(--bg4);color:var(--text2)">🏢 '+esc(a.worktype)+'</span>':'')+
+    (a.location?'<span style="font-size:11px;color:var(--text2)">📍 '+esc(a.location)+'</span>':'')+
+    (a.salary?'<span style="font-size:12px;color:var(--green)">💰 '+esc(a.salary)+'</span>':'')+
+    '</div>'+
+    '<div class="detail-grid">'+
+    '<div><div class="d-lbl2">Applied</div><div>'+fmtDate(a.date)+'</div></div>'+
+    '<div><div class="d-lbl2">Source</div><div>'+esc(a.source||'—')+'</div></div>'+
+    '<div><div class="d-lbl2">Contact</div><div>'+esc(a.contact||'—')+'</div></div>'+
+    '<div><div class="d-lbl2">Resume</div><div>'+esc(a.resume||'—')+'</div></div>'+
+    (a.url?'<div style="grid-column:1/-1"><div class="d-lbl2">URL</div><div><a href="'+esc(a.url)+'" target="_blank" style="color:var(--accent)">'+esc(a.url)+' ↗</a></div></div>':'')+
+    '</div>'+
+    ((a.skills||[]).length?'<div class="d-lbl">🛠 Skills</div><div style="display:flex;flex-wrap:wrap;gap:5px">'+(a.skills||[]).map(function(s){return'<span class="dtag">'+esc(s)+'</span>';}).join('')+'</div>':'')+
+    (a.learn?'<div class="d-lbl">📚 What to Learn</div><div class="d-box">'+esc(a.learn)+'</div>':'')+
+    (a.notes?'<div class="d-lbl">🗒 Notes</div><div class="d-box">'+esc(a.notes)+'</div>':'')+
+    (a.next?'<div class="d-lbl">⚡ Next Action</div><div class="d-action">'+esc(a.next)+(a.nextdate?'<span style="color:var(--text3);margin-left:10px;font-size:11px">by '+fmtShort(a.nextdate)+'</span>':'')+'</div>':'')+
+    rHTML+
+    '<div class="modal-footer"><button class="btn-ghost" onclick="this.closest(\'.modal-overlay\').remove()">Close</button><button class="btn-primary" onclick="this.closest(\'.modal-overlay\').remove();openEditModal(\''+a.id+'\')">Edit</button></div>'+
+  '</div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov); setTimeout(function(){ov.classList.add('open');},10);
+}
+
+/* ================================================================
+   ANALYTICS
+================================================================ */
+function renderAnalytics(){
+  var tot=apps.length,resp=apps.filter(function(a){return!['Applied','Ghosted'].includes(a.status);}).length;
+  var off=apps.filter(function(a){return a.status==='Offer';}).length;
+  var int=apps.filter(function(a){return a.status==='Interview';}).length;
+  var m=$('aMetrics');
+  if(m)m.innerHTML=[{n:tot,l:'Total Applications',c:'var(--accent)',d:'All time'},{n:tot?Math.round(resp/tot*100)+'%':'0%',l:'Response Rate',c:'var(--teal)',d:resp+' of '+tot+' responded'},{n:off,l:'Active Offers',c:'var(--green)',d:'Awaiting decision'},{n:int,l:'In Interview',c:'var(--orange)',d:'Currently in process'}].map(function(x){return'<div class="metric-card"><div class="metric-n" style="color:'+x.c+'">'+x.n+'</div><div class="metric-l">'+x.l+'</div><div class="metric-d">'+x.d+'</div></div>';}).join('');
+  var ch=$('aCharts');if(!ch)return;
+  var byS=STATUSES.map(function(s){return{s:s,n:apps.filter(function(a){return a.status===s;}).length};}),maxS=Math.max.apply(null,byS.map(function(x){return x.n;}).concat([1]));
+  var srcNames=['LinkedIn','Naukri','Referral','Company Website','AngelList','Other'];
+  var bySrc=srcNames.map(function(s){return{s:s,n:apps.filter(function(a){return(a.source||'').startsWith(s==='Other'?'Other':s);}).length};}).sort(function(a,b){return b.n-a.n;});
+  var maxSrc=Math.max.apply(null,bySrc.map(function(x){return x.n;}).concat([1]));
+  ch.innerHTML='<div class="chart-card"><div class="chart-t">By Status</div>'+byS.map(function(x){return'<div class="bar-row"><div class="bar-lbl" style="color:'+SC[x.s]+'">'+x.s+'</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(x.n/maxS*100)+'%;background:'+SC[x.s]+'"></div></div><div class="bar-n">'+x.n+'</div></div>';}).join('')+'</div>'+
+  '<div class="chart-card"><div class="chart-t">Top Sources</div>'+bySrc.map(function(x){return'<div class="bar-row"><div class="bar-lbl">'+x.s+'</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(x.n/maxSrc*100)+'%;background:var(--accent)"></div></div><div class="bar-n">'+x.n+'</div></div>';}).join('')+'</div>';
+}
+
+/* ================================================================
+   PUBLIC PROFILE
+================================================================ */
+function renderProfile(){
+  var pub=apps.filter(function(a){return a.isPublic;}),all=[].concat.apply([],apps.map(function(a){return a.skills||[];})).filter(function(v,i,arr){return arr.indexOf(v)===i;});
+  var se=$('pubSkills'),ae=$('pubApps');
+  if(se)se.innerHTML=all.map(function(s){return'<span style="font-size:12px;padding:5px 12px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:8px">'+esc(s)+'</span>';}).join('');
+  if(ae)ae.innerHTML=pub.length?pub.map(function(a){return'<div style="background:var(--bg2);border:1px solid var(--border);border-left:3px solid '+SC[a.status]+';border-radius:11px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:9px"><div><div style="font-family:\'Syne\',sans-serif;font-weight:700;font-size:14px">'+esc(a.company)+'</div><div style="font-size:12px;color:var(--text2)">'+esc(a.role)+'</div></div><span class="sbadge" style="color:'+SC[a.status]+';background:'+SB[a.status]+'">'+a.status+'</span></div>';}).join(''):'<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px">No public applications yet.</div>';
+}
+
+/* ================================================================
+   SETTINGS
+================================================================ */
+function showSettingsPanel(id){
+  document.querySelectorAll('.s-panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.s-tab').forEach(function(t){t.classList.remove('active');});
+  var p=$('sp_'+id);if(p)p.classList.add('active');
+  var t=$('st_'+id);if(t)t.classList.add('active');
+}
+
+/* ================================================================
+   CSV EXPORT
+================================================================ */
+function exportCSV(){
+  function e2(v){var s=Array.isArray(v)?v.join('; '):String(v||'');return(s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;}
+  var csv=['Company,Role,Status,Priority,Applied,Salary,Location,Work Type,Source,Contact,Skills,Notes,Next Action'].concat(apps.map(function(a){return[a.company,a.role,a.status,a.priority,a.date,a.salary,a.location,a.worktype,a.source,a.contact,(a.skills||[]),a.notes,a.next].map(e2).join(',');})).join('\n');
+  var blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download='mja-'+new Date().toISOString().split('T')[0]+'.csv';link.click();URL.revokeObjectURL(url);
+  showToast('CSV exported!','success');
+}
+
+/* ================================================================
+   WORKSPACES
+================================================================ */
+function renderWorkspacePage(){
+  var pg=$('wsPg');if(!pg)return;
+  if(!workspaces.length){pg.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">No Workspaces Yet</div><div class="empty-desc">Create a workspace and invite teammates via a 6-character code.</div><button class="btn-primary" onclick="openCreateWs()">+ Create Workspace</button></div>';return;}
+  pg.innerHTML='<div class="ws-grid">'+workspaces.map(function(ws){
+    var isOwner=ws.ownerId===(currentUser&&currentUser.email);
+    return'<div class="ws-card" onclick="openWsDetail(\''+ws.id+'\')">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div class="ws-name">'+esc(ws.name)+'</div><span class="role-badge" style="background:'+(isOwner?'rgba(108,99,255,.12)':'rgba(56,249,215,.12)')+';color:'+(isOwner?'var(--accent)':'var(--teal)')+'">'+  (isOwner?'Owner':'Member')+'</span></div>'+
+      (ws.desc?'<div class="ws-desc">'+esc(ws.desc)+'</div>':'<div class="ws-desc" style="color:var(--text3);font-style:italic">No description</div>')+
+      '<div class="ws-meta"><span>👥 '+ws.members.length+' member'+(ws.members.length!==1?'s':'')+'</span></div>'+
+      '<div style="margin-top:10px;display:flex;align-items:center;gap:6px"><span style="font-size:10px;color:var(--text3)">Code:</span><span style="font-size:11px;font-weight:700;font-family:\'Syne\',sans-serif;color:var(--accent);letter-spacing:1px;cursor:pointer" onclick="event.stopPropagation();copyCode(\''+ws.inviteCode+'\')">'+ws.inviteCode+'</span><span style="cursor:pointer;font-size:11px" onclick="event.stopPropagation();copyCode(\''+ws.inviteCode+'\')">📋</span></div>'+
+    '</div>';
+  }).join('')+'</div>';
+}
+function copyCode(code){if(navigator.clipboard)navigator.clipboard.writeText(code).catch(function(){});showToast('Code copied: '+code,'success');}
+function openCreateWs(){
+  var ov=document.createElement('div');ov.className='modal-overlay';ov.style.zIndex='170';
+  ov.innerHTML='<div class="modal" style="max-width:500px"><div class="modal-header"><div><div class="modal-title">Create Workspace</div><div class="modal-sub">Set up a shared job-hunt space</div></div><button class="modal-close" onclick="this.closest(\'.modal-overlay\').remove()">✕</button></div>'+
+  '<div style="display:flex;flex-direction:column;gap:13px">'+
+  '<div class="field"><div class="field-label">Workspace Name *</div><input class="field-input" id="wsName" placeholder="FAANG Hunt 2025, Bootcamp Cohort…" autocomplete="off"></div>'+
+  '<div class="field"><div class="field-label">Description</div><input class="field-input" id="wsDesc" placeholder="Short description (optional)"></div>'+
+  '<div class="field"><div class="field-label">Add Members (one name per line)</div><textarea class="field-input" id="wsMembers" rows="5" style="resize:vertical" placeholder="Alice Johnson\nBob Kumar\nCarol Singh\n\nYou are added as Owner automatically."></textarea></div>'+
+  '</div><div class="modal-footer"><button class="btn-ghost" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button><button class="btn-primary" onclick="doCreateWs(this)">Create Workspace</button></div></div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);setTimeout(function(){ov.classList.add('open');},10);setTimeout(function(){var w=$('wsName');if(w)w.focus();},150);
+}
+function doCreateWs(btn){
+  var name=getVal('wsName').trim(),desc=getVal('wsDesc').trim(),raw=getVal('wsMembers');
+  if(!name){showToast('Workspace name required!','error');return;}
+  var extras=raw.split('\n').map(function(s){return s.trim();}).filter(Boolean).map(function(n){return{id:uid(),name:n,role:'member',joinedAt:new Date().toISOString()};});
+  var ws={id:uid(),name:name,desc:desc,inviteCode:genCode(),ownerId:currentUser.email,ownerName:currentUser.name,createdAt:new Date().toISOString(),members:[{id:currentUser.email,name:currentUser.name,role:'owner',joinedAt:new Date().toISOString()}].concat(extras)};
+  workspaces.push(ws);saveWS();btn.closest('.modal-overlay').remove();showToast('Workspace "'+name+'" created!','success');renderWorkspacePage();
+}
+function openJoinWs(){
+  var ov=document.createElement('div');ov.className='modal-overlay';ov.style.zIndex='170';
+  ov.innerHTML='<div class="modal" style="max-width:420px"><div class="modal-header"><div><div class="modal-title">Join a Workspace</div><div class="modal-sub">Enter the 6-character invite code</div></div><button class="modal-close" onclick="this.closest(\'.modal-overlay\').remove()">✕</button></div>'+
+  '<div class="field" style="margin-bottom:10px"><div class="field-label">Invite Code</div><input class="field-input" id="joinCode" maxlength="6" placeholder="AB12CD" style="text-transform:uppercase;letter-spacing:6px;font-size:22px;font-family:\'Syne\',sans-serif;font-weight:700;text-align:center" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key===\'Enter\')doJoinWs(this)"></div>'+
+  '<div id="joinErr" style="display:none;font-size:12px;color:var(--red);padding:8px 12px;background:rgba(255,107,107,.08);border-radius:8px;margin-bottom:10px;border:1px solid rgba(255,107,107,.2)"></div>'+
+  '<div class="modal-footer"><button class="btn-ghost" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button><button class="btn-primary" onclick="doJoinWs(this)">Join</button></div></div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);setTimeout(function(){ov.classList.add('open');},10);setTimeout(function(){var j=$('joinCode');if(j)j.focus();},150);
+}
+function doJoinWs(btn){
+  var code=getVal('joinCode').trim().toUpperCase(),err=$('joinErr');
+  if(code.length!==6){if(err){err.style.display='block';err.textContent='Code must be 6 characters.';}return;}
+  var ws=workspaces.find(function(w){return w.inviteCode===code;});
+  if(!ws){if(err){err.style.display='block';err.textContent='No workspace found with that code.';}return;}
+  if(ws.members.find(function(m){return m.id===(currentUser&&currentUser.email);})){if(err){err.style.display='block';err.textContent='You are already a member.';}return;}
+  ws.members.push({id:currentUser.email,name:currentUser.name,role:'member',joinedAt:new Date().toISOString()});
+  saveWS();btn.closest('.modal-overlay').remove();showToast('Joined "'+ws.name+'"!','success');renderWorkspacePage();
+}
+function openWsDetail(wsId){
+  var ws=workspaces.find(function(w){return w.id===wsId;});if(!ws)return;
+  var isOwner=ws.ownerId===(currentUser&&currentUser.email);
+  var ov=document.createElement('div');ov.className='modal-overlay';ov.style.zIndex='170';
+  var rows=ws.members.map(function(m){return'<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border)">'+
+    '<div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-family:\'Syne\',sans-serif;font-weight:800;font-size:12px;color:#fff">'+esc(m.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase())+'</div><div><div style="font-size:13px;font-weight:500">'+esc(m.name)+'</div></div></div>'+
+    '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:'+(m.role==='owner'?'rgba(108,99,255,.12)':'rgba(56,249,215,.12)')+';color:'+(m.role==='owner'?'var(--accent)':'var(--teal)')+'">'+m.role+'</span>'+
+    (isOwner&&m.role!=='owner'?'<button class="btn-ghost btn-danger" style="padding:3px 9px;font-size:11px" onclick="removeMember(\''+wsId+'\',\''+m.id+'\',this)">Remove</button>':'')+
+    '</div></div>';}).join('');
+  ov.innerHTML='<div class="modal" style="max-width:540px"><div class="modal-header"><div><div class="modal-title">'+esc(ws.name)+'</div><div class="modal-sub">'+(ws.desc?esc(ws.desc):'Team workspace')+'</div></div><button class="modal-close" onclick="this.closest(\'.modal-overlay\').remove()">✕</button></div>'+
+  '<div style="background:rgba(108,99,255,.07);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Invite Code</div><div style="font-family:\'Syne\',sans-serif;font-weight:800;font-size:24px;letter-spacing:6px;color:var(--accent)">'+ws.inviteCode+'</div></div><button class="btn-primary" onclick="copyCode(\''+ws.inviteCode+'\')">📋 Copy</button></div>'+
+  '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Members ('+ws.members.length+')</div>'+(isOwner?'<button class="btn-ghost" style="padding:4px 10px;font-size:11px" onclick="addMemberPrompt(\''+wsId+'\',this)">+ Add</button>':'')+' </div>'+
+  '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px">'+rows+'</div>'+
+  '<div class="modal-footer">'+(isOwner?'<button class="btn-ghost btn-danger" style="margin-right:auto" onclick="deleteWs(\''+wsId+'\',this)">Delete</button>':'<button class="btn-ghost btn-danger" style="margin-right:auto" onclick="leaveWs(\''+wsId+'\',this)">Leave</button>')+
+  '<button class="btn-ghost" onclick="this.closest(\'.modal-overlay\').remove()">Close</button></div></div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);setTimeout(function(){ov.classList.add('open');},10);
+}
+function addMemberPrompt(wsId,btn){var n=prompt('Enter member name:');if(!n||!n.trim())return;var ws=workspaces.find(function(w){return w.id===wsId;});if(!ws)return;ws.members.push({id:uid(),name:n.trim(),role:'member',joinedAt:new Date().toISOString()});saveWS();showToast(n.trim()+' added!','success');btn.closest('.modal-overlay').remove();openWsDetail(wsId);}
+function removeMember(wsId,mId,btn){if(!confirm('Remove this member?'))return;var ws=workspaces.find(function(w){return w.id===wsId;});if(!ws)return;ws.members=ws.members.filter(function(m){return m.id!==mId;});saveWS();var row=btn.closest('div[style*="border-bottom"]');if(row){row.style.opacity='0';row.style.transition='.3s';setTimeout(function(){row.remove();},300);}showToast('Member removed','success');renderWorkspacePage();}
+function deleteWs(wsId,btn){if(!confirm('Delete this workspace?'))return;workspaces=workspaces.filter(function(w){return w.id!==wsId;});saveWS();btn.closest('.modal-overlay').remove();showToast('Workspace deleted','success');renderWorkspacePage();}
+function leaveWs(wsId,btn){if(!confirm('Leave this workspace?'))return;var ws=workspaces.find(function(w){return w.id===wsId;});if(ws)ws.members=ws.members.filter(function(m){return m.id!==(currentUser&&currentUser.email);});saveWS();btn.closest('.modal-overlay').remove();showToast('You left the workspace','success');renderWorkspacePage();}
+
+/* ================================================================
+   GUIDED TOUR
+================================================================ */
+var TOUR=[
+  {title:'👋 Welcome to MJA!',desc:'Your personal job application command centre. Quick 10-step tour!',el:null,nav:null},
+  {title:'📋 Dashboard',desc:'Your main board. Toggle <strong>Kanban</strong> or <strong>Table</strong>. Filter, sort, and search all applications.',el:'nav_dashboard',nav:'dashboard'},
+  {title:'+ Add Application',desc:'Click to manually log a job — company, role, salary, skills, notes and more.',el:'topAddBtn',nav:'dashboard'},
+  {title:'✨ Smart Fill',desc:'Paste any job description — company, role, location, salary and skills auto-extract.',el:'sfToolBtn',nav:'dashboard'},
+  {title:'🗑️ Clear All',desc:'Delete every application at once. A confirmation dialog protects against accidents.',el:'clearAllBtn',nav:'dashboard'},
+  {title:'📊 Status Pills',desc:'Click any status pill to instantly filter your board by that status.',el:'statsBar',nav:'dashboard'},
+  {title:'📈 Analytics',desc:'See your <strong>response rate</strong>, active offers, and breakdowns by status and source.',el:'nav_analytics',nav:'analytics'},
+  {title:'👥 Workspaces',desc:'Create or join a shared workspace. Add member names and share the invite code.',el:'nav_workspace',nav:'workspace'},
+  {title:'🌐 Public Profile',desc:'Get a shareable link like <em>mja.app/profile/you</em> — great for recruiters.',el:'nav_profile',nav:'profile'},
+  {title:'🚀 All set!',desc:'Click <strong>+ Add Application</strong> or <strong>✨ Smart Fill</strong> to begin. Good luck! 💪',el:null,nav:null}
+];
+var _tourStep=0;
+function startTour(){localStorage.setItem('mja_tour_seen','1');_tourStep=0;_showTour();}
+function _showTour(){
+  var old=$('_tOv');if(old)old.remove();
+  if(_tourStep>=TOUR.length)return;
+  var step=TOUR[_tourStep];
+  if(step.nav)showPage(step.nav);
+  var ov=document.createElement('div');ov.id='_tOv';ov.style.cssText='position:fixed;inset:0;z-index:500;pointer-events:none';
+  var bd=document.createElement('div');bd.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(2px);pointer-events:all';
+  bd.onclick=function(){ov.remove();};ov.appendChild(bd);
+  var rect=null;
+  if(step.el){var el=$(step.el);if(el){rect=el.getBoundingClientRect();var hl=document.createElement('div');hl.style.cssText='position:absolute;border-radius:10px;border:2px solid var(--accent);box-shadow:0 0 0 4px rgba(108,99,255,.25),0 0 0 9999px rgba(0,0,0,.72);pointer-events:none';hl.style.left=(rect.left-6)+'px';hl.style.top=(rect.top-6)+'px';hl.style.width=(rect.width+12)+'px';hl.style.height=(rect.height+12)+'px';ov.appendChild(hl);bd.style.background='transparent';bd.style.boxShadow='none';}}
+  var card=document.createElement('div');card.style.cssText='position:absolute;z-index:10;background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px 24px;width:300px;box-shadow:0 20px 60px rgba(0,0,0,.6);pointer-events:all';
+  if(rect){var sr=rect.right+320<window.innerWidth;if(sr){card.style.left=(rect.right+14)+'px';card.style.top=Math.max(14,Math.min(rect.top,window.innerHeight-280))+'px';}else{card.style.left=(rect.left-314)+'px';card.style.top=Math.max(14,Math.min(rect.top,window.innerHeight-280))+'px';}}else{card.style.left='50%';card.style.top='50%';card.style.transform='translate(-50%,-50%)';}
+  var dots=TOUR.map(function(_,i){return'<div style="height:4px;border-radius:2px;transition:.2s;background:'+(i===_tourStep?'var(--accent)':'var(--bg4)')+';width:'+(i===_tourStep?'18px':'7px')+'"></div>';}).join('');
+  card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div style="font-family:\'Syne\',sans-serif;font-weight:800;font-size:15px;padding-right:8px">'+step.title+'</div><button onclick="document.getElementById(\'_tOv\').remove()" style="background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:12px;border-radius:6px;padding:2px 7px;flex-shrink:0">✕</button></div><div style="font-size:12px;color:var(--text2);line-height:1.75;margin-bottom:16px">'+step.desc+'</div><div style="display:flex;gap:4px;margin-bottom:16px;align-items:center">'+dots+'</div><div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:11px;color:var(--text3)">'+(_tourStep+1)+' of '+TOUR.length+'</span><div style="display:flex;gap:6px">'+(_tourStep>0?'<button class="btn-ghost" style="padding:6px 12px;font-size:12px" onclick="_tourStep--;_showTour()">← Back</button>':'')+  '<button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="_tourStep++;_showTour()">'+(_tourStep===TOUR.length-1?'Finish 🎉':'Next →')+'</button></div></div>';
+  ov.appendChild(card);document.body.appendChild(ov);
+}
+
+/* ================================================================
+   LEGAL
+================================================================ */
+function _legal(title,html){
+  var ov=document.createElement('div');ov.className='modal-overlay';ov.style.zIndex='300';
+  ov.innerHTML='<div class="modal" style="max-width:580px"><div class="modal-header"><div class="modal-title">'+title+'</div><button class="modal-close" onclick="this.closest(\'.modal-overlay\').remove()">✕</button></div><div style="max-height:60vh;overflow-y:auto;padding-right:4px">'+html+'</div><div class="modal-footer"><button class="btn-primary" onclick="this.closest(\'.modal-overlay\').remove()">I Understand</button></div></div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});document.body.appendChild(ov);setTimeout(function(){ov.classList.add('open');},10);
+}
+function showTerms(){_legal('Terms of Service','<p class="lp" style="color:var(--text3);font-size:11px">Effective: March 2025 · MJA v4.0</p><div class="lh">1. Acceptance</div><p class="lp">By using MJA you agree to these Terms.</p><div class="lh">2. Service</div><p class="lp">MJA is a personal job application tracker for individual, non-commercial use. Features may change over time.</p><div class="lh">3. Your Data</div><p class="lp">All data belongs to you. Export or delete it any time via Settings → Data.</p><div class="lh">4. Acceptable Use</div><p class="lp">Do not use MJA unlawfully or attempt to breach our systems.</p><div class="lh">5. Disclaimer</div><p class="lp">MJA is provided "as is" without warranties. We do not guarantee error-free operation.</p><div class="lh">6. Governing Law</div><p class="lp">Governed by the laws of India. Disputes resolved in courts of Hyderabad, Telangana.</p><div class="lh">7. Contact</div><p class="lp" style="color:var(--accent)">legal@mja.app</p>');}
+function showPrivacy(){_legal('Privacy Policy','<p class="lp" style="color:var(--text3);font-size:11px">Effective: March 2025 · MJA v4.0</p><div class="lh">1. What We Collect</div><p class="lp">Account info (name, email) and application data you enter. Never sold to third parties.</p><div class="lh">2. Security</div><p class="lp">All connections via TLS 1.2+. Passwords hashed with Argon2.</p><div class="lh">3. Your Rights</div><p class="lp">Access (CSV export), correct, or delete your data at any time from Settings.</p><div class="lh">4. Cookies</div><p class="lp">Minimal session cookies only. No advertising or third-party trackers.</p><div class="lh">5. Contact</div><p class="lp" style="color:var(--accent)">privacy@mja.app</p>');}
+
+/* ================================================================
+   TOAST
+================================================================ */
+function showToast(msg,type){
+  type=type||'success';
+  var wrap=$('toastWrap');if(!wrap)return;
+  var toast=document.createElement('div');toast.className='toast '+type;
+  toast.innerHTML='<span style="color:'+(type==='success'?'var(--green)':'var(--red)')+';font-size:14px;font-weight:700">'+(type==='success'?'✓':'✕')+'</span><span>'+msg+'</span>';
+  wrap.appendChild(toast);
+  setTimeout(function(){toast.style.opacity='0';toast.style.transform='translateX(36px)';toast.style.transition='.3s';setTimeout(function(){toast.remove();},300);},3200);
+}
+
+/* ================================================================
+   INIT
+================================================================ */
+document.addEventListener('DOMContentLoaded',function(){
+  applyTheme(currentTheme);
+  var appModal=$('appModal');
+  if(appModal)appModal.addEventListener('click',function(e){if(e.target===appModal)closeModal();});
+  function chkMobile(){var b=$('mobileMenuBtn');if(b)b.style.display=window.innerWidth<=768?'flex':'none';}
+  chkMobile(); window.addEventListener('resize',chkMobile);
+  /* Auto-login if session exists */
+  if(currentUser){launchApp();}
+});
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);transition:background .25s,color .25s}
+input,select,textarea,button{font-family:'DM Sans',sans-serif}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}::-webkit-scrollbar-track{background:transparent}
+
+[data-theme="dark"]{--bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;--bg4:#22222f;--border:#2a2a3a;--border2:#3a3a4a;--text:#f0f0f8;--text2:#9898b8;--text3:#55557a;--accent:#6c63ff;--accent-h:#7d75ff;--green:#43e97b;--orange:#f7971e;--teal:#38f9d7;--red:#ff6b6b;--shadow:0 8px 32px rgba(0,0,0,.55)}
+[data-theme="light"]{--bg:#f2f2f7;--bg2:#ffffff;--bg3:#f0f0f6;--bg4:#e6e6f0;--border:#e0e0ec;--border2:#cacad8;--text:#111118;--text2:#55556a;--text3:#9898b0;--accent:#5a52ee;--accent-h:#4840d4;--green:#1a9e52;--orange:#d4780a;--teal:#0891b2;--red:#dc3545;--shadow:0 8px 32px rgba(0,0,0,.1)}
+
+/* Layout */
+.app-shell{display:none;grid-template-columns:240px 1fr;height:100vh}
+.main-area{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* Sidebar */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow:hidden;z-index:20;transition:background .25s,border-color .25s}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:18px 18px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.logo-mark{width:34px;height:34px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:18px}
+.logo-sub{font-size:10px;color:var(--text3)}
+.sb-scroll{flex:1;overflow-y:auto;padding:6px 0}
+.sb-section{padding:8px 10px 4px}
+.sb-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);padding:0 8px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:background .15s,color .15s;margin-bottom:2px;border:none;background:transparent;width:100%;text-align:left}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--accent);color:#fff}
+.nav-icon{width:16px;height:16px;opacity:.65;flex-shrink:0}
+.nav-item.active .nav-icon{opacity:1}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:700;padding:1px 7px;border-radius:100px;background:var(--bg4);color:var(--text2)}
+.nav-item.active .nav-badge{background:rgba(255,255,255,.25);color:#fff}
+.sb-user{border-top:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .15s;flex-shrink:0}
+.sb-user:hover{background:var(--bg3)}
+.user-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#fff;flex-shrink:0}
+.side-stat{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;border-radius:7px;font-size:12px;cursor:pointer;transition:background .12s}
+.side-stat:hover{background:var(--bg3)}
+
+/* Topbar */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 22px;height:54px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;transition:background .25s,border-color .25s}
+.topbar-title{font-family:'Syne',sans-serif;font-weight:700;font-size:17px}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.icon-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.icon-btn:hover{background:var(--bg3);color:var(--text)}
+.btn-primary{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap}
+.btn-primary:hover{background:var(--accent-h)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.btn-ghost{padding:7px 14px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:.15s}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text);background:var(--bg3)}
+.btn-danger{border-color:var(--red)!important;color:var(--red)!important}
+.btn-danger:hover{background:rgba(255,107,107,.08)!important}
+
+/* Login Screen */
+#loginScreen{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:20px;transition:background .25s}
+#loginScreen::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(108,99,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(108,99,255,.05) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+.auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:32px 32px 26px;width:100%;max-width:440px;position:relative;z-index:1;box-shadow:var(--shadow);animation:authIn .35s cubic-bezier(.16,1,.3,1) both;transition:background .25s,border-color .25s}
+@keyframes authIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+.auth-tabs{display:flex;background:var(--bg3);border-radius:10px;padding:4px;margin-bottom:22px}
+.auth-tab{flex:1;padding:9px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;border-radius:8px;cursor:pointer;transition:.2s}
+.auth-tab.active{background:var(--accent);color:#fff;font-weight:600}
+.method-tabs{display:flex;gap:5px;margin-bottom:18px;background:var(--bg3);padding:4px;border-radius:10px}
+.method-tab{flex:1;padding:8px;font-size:12px;border:none;background:transparent;color:var(--text2);border-radius:7px;cursor:pointer;transition:.2s}
+.method-tab.active{background:var(--accent);color:#fff;font-weight:600}
+.fg{margin-bottom:14px}
+.fl{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text2);margin-bottom:7px}
+.fi{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;padding:11px 14px;outline:none;transition:border-color .2s,box-shadow .2s}
+.fi:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,.12)}
+.fi::placeholder{color:var(--text3)}
+.auth-err{font-size:12px;color:var(--red);display:none;background:rgba(255,107,107,.08);padding:9px 12px;border-radius:8px;border:1px solid rgba(255,107,107,.2);margin-bottom:13px;line-height:1.5}
+.auth-submit{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;margin-top:4px}
+.auth-submit:hover{background:var(--accent-h)}
+.auth-submit:disabled{opacity:.6;cursor:not-allowed}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--text3);font-size:12px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-demo{width:100%;padding:11px;background:transparent;color:var(--text2);border:1.5px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer;transition:.15s}
+.auth-demo:hover{border-color:var(--accent);color:var(--accent);background:rgba(108,99,255,.06)}
+.auth-footer{text-align:center;font-size:12px;color:var(--text3);margin-top:16px;line-height:1.6}
+/* Password eye toggle */
+.pass-wrap{position:relative;display:flex;align-items:center}
+.pass-input{padding-right:42px!important;width:100%}
+.eye-btn{position:absolute;right:1px;top:1px;bottom:1px;width:40px;background:transparent;border:none;border-radius:0 9px 9px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:color .15s}
+.eye-btn:hover{color:var(--text)}
+/* Password strength */
+#passBar{display:none;margin-top:6px}
+/* OTP code big input */
+.otp-big-input{text-align:center;font-family:'Syne',sans-serif;font-weight:800;font-size:24px;letter-spacing:10px;padding:12px!important}
+/* Step indicator */
+.su-step{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:16px}
+.su-step-dot{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+/* Verify channel cards */
+.v-opt{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;background:var(--bg3);border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:10px}
+.v-opt:hover,.v-opt.selected{border-color:var(--accent)}
+.v-opt.selected{background:rgba(108,99,255,.07)}
+.v-radio{width:17px;height:17px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;position:relative;transition:.15s}
+.v-radio.checked{border-color:var(--accent)}
+.v-radio.checked::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:7px;height:7px;border-radius:50%;background:var(--accent)}
+/* OTP boxes */
+.otp-box{width:42px;height:52px;text-align:center;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;background:var(--bg3);border:2px solid var(--border);border-radius:10px;color:var(--text);outline:none;transition:border-color .2s,color .2s;caret-color:var(--accent)}
+.otp-box:focus{border-color:var(--accent)}
+.otp-demo-box{margin-top:10px;background:rgba(108,99,255,.1);border:1px dashed rgba(108,99,255,.4);border-radius:10px;padding:10px 16px;display:inline-block;text-align:center}
+
+/* Pages */
+.page{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0}
+.page.active{display:flex}
+.page-body{flex:1;overflow-y:auto;padding:22px}
+
+/* Stats bar */
+.stats-bar{display:flex;gap:7px;flex-wrap:wrap;padding:10px 22px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.stat-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:100px;background:var(--bg3);border:1px solid var(--border);font-size:12px;cursor:pointer;transition:border-color .15s;user-select:none}
+.stat-pill:hover,.stat-pill.active-filter{border-color:var(--accent)}
+.stat-pill.active-filter{background:rgba(108,99,255,.08)}
+.stat-n{font-family:'Syne',sans-serif;font-weight:700;font-size:13px}
+.stat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:7px;padding:10px 22px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;flex-wrap:wrap}
+.search-wrap{flex:1;min-width:140px;position:relative}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none}
+.search-input{width:100%;padding:8px 12px 8px 32px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--text3)}
+.filter-sel{padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text2);font-size:12px;outline:none;cursor:pointer}
+.filter-sel option{background:var(--bg2)}
+.view-toggle{display:flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--bg3)}
+.view-btn{padding:7px 11px;border:none;background:transparent;color:var(--text3);cursor:pointer;transition:.15s;display:flex;align-items:center}
+.view-btn:hover{background:var(--bg4);color:var(--text)}
+.view-btn.active{background:var(--accent);color:#fff}
+.tb-sf{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:9px;border:1px solid var(--accent);background:rgba(108,99,255,.07);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+.tb-sf:hover{background:rgba(108,99,255,.16)}
+.tb-export{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;cursor:pointer;transition:.15s}
+.tb-export:hover{background:var(--bg3);color:var(--text)}
+.tb-clear{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:9px;border:1px solid rgba(255,107,107,.4);background:rgba(255,107,107,.06);color:var(--red);font-size:12px;font-weight:500;cursor:pointer;transition:.15s;white-space:nowrap}
+.tb-clear:hover{background:rgba(255,107,107,.14);border-color:var(--red)}
+
+/* Kanban */
+.kanban-board{display:flex;gap:12px;overflow-x:auto;padding:18px 22px 22px;height:100%}
+.k-col{min-width:245px;max-width:258px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.k-header{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.k-count{font-size:11px;padding:2px 8px;border-radius:100px;background:var(--bg4);color:var(--text2);font-family:'DM Sans',sans-serif;font-weight:500}
+.k-cards{display:flex;flex-direction:column;gap:7px;min-height:40px;overflow-y:auto}
+.k-empty{text-align:center;padding:20px 8px;color:var(--text3);font-size:12px}
+.app-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px;cursor:pointer;position:relative;overflow:hidden;animation:cardIn .2s ease both}
+@keyframes cardIn{from{opacity:0;transform:translateY(4px)}}
+.app-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px}
+.app-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 18px rgba(0,0,0,.18)}
+.c-applied::before{background:#6c63ff}.c-screening::before{background:#f7971e}
+.c-interview::before{background:#38f9d7}.c-offer::before{background:#43e97b}
+.c-rejected::before{background:#ff6b6b}.c-ghosted::before{background:#8888a8}
+.card-co{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:2px}
+.card-role{font-size:12px;color:var(--text2);margin-bottom:8px}
+.card-foot{display:flex;align-items:center;justify-content:space-between}
+.card-date{font-size:10px;color:var(--text3)}
+.pri-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:100px;text-transform:uppercase;letter-spacing:.4px}
+.card-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:7px}
+.ctag{font-size:10px;padding:2px 6px;background:var(--bg4);color:var(--text2);border-radius:3px}
+.card-next{font-size:11px;color:var(--orange);margin-top:6px}
+
+/* Table */
+.tbl-wrap{border-radius:12px;border:1px solid var(--border);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--bg3)}
+th{padding:10px 14px;text-align:left;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text2);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr{cursor:pointer;transition:background .12s}
+tbody tr:hover{background:var(--bg3)}
+tbody tr:last-child td{border-bottom:none}
+.tc{font-family:'Syne',sans-serif;font-weight:700}
+.sbadge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:100px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.sbadge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:18px;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:18px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;padding:24px;transform:translateY(12px) scale(.98);transition:transform .2s;box-shadow:var(--shadow)}
+.modal-overlay.open .modal{transform:none}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:18px}
+.modal-sub{font-size:13px;color:var(--text2);margin-top:3px}
+.modal-close{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
+.modal-close:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.modal-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+
+/* Form */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.form-full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:5px}
+.field-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2)}
+.field-input{background:var(--bg3);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;padding:10px 13px;outline:none;transition:border-color .2s;width:100%}
+.field-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,.1)}
+.field-input::placeholder{color:var(--text3)}
+.field-input.textarea{resize:vertical}
+#f_src_other_wrap{border-left:3px solid var(--accent);padding-left:12px}
+
+/* Smart Fill */
+.sf-tab{padding:8px 16px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:.15s}
+.sf-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.sf-textarea{width:100%;height:200px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;padding:14px;resize:vertical;outline:none;line-height:1.65;transition:border-color .2s}
+.sf-textarea:focus{border-color:var(--accent)}
+.sf-textarea::placeholder{color:var(--text3)}
+.sf-drop{border:2px dashed var(--border);border-radius:12px;padding:44px 20px;text-align:center;cursor:pointer;transition:.2s}
+.sf-drop:hover,.sf-drop.drag-over{border-color:var(--accent);background:rgba(108,99,255,.05)}
+
+/* Detail */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:14px}
+.d-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin:14px 0 6px}
+.d-lbl2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:4px}
+.d-box{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:11px 13px;font-size:13px;color:var(--text2);line-height:1.7;white-space:pre-wrap;margin-top:4px}
+.d-action{background:rgba(247,151,30,.08);border:1px solid rgba(247,151,30,.2);border-radius:9px;padding:10px 13px;font-size:13px;color:var(--orange);margin-top:4px}
+.dtag{font-size:11px;padding:3px 10px;background:var(--bg4);color:var(--text2);border-radius:5px}
+.round-row{display:flex;align-items:center;gap:8px;padding:9px 13px;background:var(--bg3);border-radius:9px;margin-bottom:7px;flex-wrap:wrap}
+.round-n{font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:rgba(108,99,255,.12);color:var(--accent)}
+
+/* Analytics */
+.an-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px}
+.metric-n{font-family:'Syne',sans-serif;font-weight:800;font-size:30px}
+.metric-l{font-size:12px;color:var(--text2);margin-top:2px}
+.metric-d{font-size:11px;color:var(--text3);margin-top:5px}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px}
+.chart-t{font-family:'Syne',sans-serif;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:16px}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bar-lbl{width:76px;font-size:11px;color:var(--text2);flex-shrink:0}
+.bar-track{flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.bar-n{font-size:11px;color:var(--text3);min-width:20px;text-align:right}
+
+/* Settings */
+.s-layout{display:grid;grid-template-columns:180px 1fr;gap:20px;max-width:800px}
+.s-nav{display:flex;flex-direction:column;gap:2px}
+.s-tab{padding:9px 12px;border-radius:9px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;text-align:left;transition:.15s;display:flex;align-items:center;gap:9px}
+.s-tab:hover{background:var(--bg3);color:var(--text)}
+.s-tab.active{background:rgba(108,99,255,.12);color:var(--accent);font-weight:600}
+.s-panel{display:none}
+.s-panel.active{display:block}
+.s-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px}
+.s-card-t{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:3px}
+.s-card-d{font-size:12px;color:var(--text2);margin-bottom:14px}
+.s-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.s-row:last-child{border-bottom:none;padding-bottom:0}
+.s-row-l{font-size:13px;font-weight:500}
+.s-row-d{font-size:12px;color:var(--text3);margin-top:2px}
+.toggle{position:relative;width:42px;height:24px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.tg-track{position:absolute;inset:0;background:var(--bg4);border:1px solid var(--border);border-radius:100px;transition:.2s}
+.toggle input:checked+.tg-track{background:var(--accent);border-color:var(--accent)}
+.tg-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;pointer-events:none}
+.toggle input:checked~.tg-thumb{transform:translateX(18px)}
+.theme-opts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.theme-opt{border:2px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;transition:.15s;text-align:center;background:var(--bg3)}
+.theme-opt:hover,.theme-opt.active{border-color:var(--accent)}
+.theme-opt.active{background:rgba(108,99,255,.07)}
+.theme-prev{width:100%;height:44px;border-radius:7px;margin-bottom:8px;overflow:hidden;display:flex;gap:3px;padding:5px}
+.theme-prev-sb{width:30%;border-radius:4px}
+.theme-prev-mn{flex:1;border-radius:4px}
+.prof-av-row{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.av-lg{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;flex-shrink:0}
+
+/* Workspaces */
+.ws-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ws-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;cursor:pointer;transition:border-color .15s}
+.ws-card:hover{border-color:var(--accent)}
+.ws-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px}
+.ws-desc{font-size:12px;color:var(--text2);margin:4px 0 12px}
+.ws-meta{display:flex;gap:14px;font-size:12px;color:var(--text2)}
+.role-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;text-transform:uppercase;letter-spacing:.4px}
+
+/* About */
+.about-hero{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:26px;margin-bottom:13px;display:flex;align-items:center;gap:20px}
+.about-logo{width:64px;height:64px;border-radius:18px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.about-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:13px}
+.about-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px}
+.feat-item{display:flex;align-items:center;gap:10px;font-size:13px;padding:5px 0}
+.feat-chk{width:18px;height:18px;border-radius:50%;background:rgba(67,233,123,.15);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-weight:700}
+.cl-item{padding:12px 0;border-bottom:1px solid var(--border)}
+.cl-item:last-child{border-bottom:none}
+.cl-ver{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--accent)}
+.cl-date{font-size:11px;color:var(--text3);margin-left:8px}
+.cl-note{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.6}
+
+/* Empty state */
+.empty-state{text-align:center;padding:52px 20px;color:var(--text3)}
+.empty-icon{font-size:42px;margin-bottom:12px}
+.empty-title{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;color:var(--text);margin-bottom:6px}
+.empty-desc{font-size:13px;line-height:1.6;max-width:300px;margin:0 auto 18px}
+
+/* Legal */
+.lh{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--text);margin:16px 0 5px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.lp{font-size:12px;color:var(--text2);line-height:1.75;margin-bottom:4px}
+
+/* Toast */
+.toast-wrap{position:fixed;bottom:22px;right:22px;z-index:300;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:11px 16px;display:flex;align-items:center;gap:10px;font-size:13px;box-shadow:var(--shadow);animation:toastIn .3s cubic-bezier(.16,1,.3,1) both;min-width:200px}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px)}}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error{border-left:3px solid var(--red)}
+
+/* Responsive */
+@media(max-width:768px){
+  .app-shell{grid-template-columns:1fr}
+  .sidebar{position:fixed;left:-250px;top:0;bottom:0;width:242px;z-index:100;transition:left .3s}
+  .sidebar.mobile-open{left:0}
+  .form-grid{grid-template-columns:1fr}
+  .an-grid{grid-template-columns:1fr 1fr}
+  .charts-row,.about-grid,.ws-grid{grid-template-columns:1fr}
+  .s-layout{grid-template-columns:1fr}
+}
+</style>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="display:flex">
+<div class="auth-card">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div>
+    <div><div class="logo-text">MJA</div><div style="font-size:10px;color:var(--text3)">My Job Applications</div></div>
+  </div>
+  <p style="font-size:13px;color:var(--text3);margin-bottom:22px">Track every application. Land your dream job.</p>
+
+  <div class="auth-tabs">
+    <button class="auth-tab active" id="tabSignin" onclick="switchTab('signin')">Sign In</button>
+    <button class="auth-tab" id="tabSignup" onclick="switchTab('signup')">Create Account</button>
+  </div>
+
+  <!-- ── SIGN IN ── -->
+  <div id="formSignin">
+    <div class="method-tabs">
+      <button class="method-tab active" id="btnPw"  onclick="switchLoginMethod('pw')">🔑 Password</button>
+      <button class="method-tab"        id="btnOtp" onclick="switchLoginMethod('otp')">📱 Email OTP</button>
+    </div>
+    <!-- Password -->
+    <div id="pwPanel">
+      <div class="fg"><label class="fl">Email Address</label><input class="fi" id="siEmail" type="email" placeholder="you@email.com" onkeydown="if(event.key==='Enter')document.getElementById('siPass').focus()"></div>
+      <div class="fg">
+        <label class="fl">Password <span style="text-transform:none;letter-spacing:0;font-weight:400;font-size:11px;color:var(--accent);cursor:pointer" onclick="showToast('Reset link sent!','success')">Forgot?</span></label>
+        <div class="pass-wrap">
+          <input class="fi pass-input" id="siPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doSignIn()">
+          <button class="eye-btn" type="button" onclick="togglePass('siPass',this)">
+            <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="auth-err" id="siErr"></div>
+      <button class="auth-submit" onclick="doSignIn()">Sign In</button>
+    </div>
+    <!-- Email OTP -->
+    <div id="otpPanel" style="display:none">
+      <div id="otpStep1">
+        <div class="fg"><label class="fl">Email Address</label><input class="fi" id="otpEmail" type="email" placeholder="you@email.com" onkeydown="if(event.key==='Enter')sendOTP()"></div>
+        <div id="otpStatus" style="display:none;font-size:12px;line-height:1.7;padding:10px 13px;border-radius:9px;border:1px solid var(--border);background:var(--bg3);margin-bottom:12px"></div>
+        <button class="auth-submit" id="sendOtpBtn" onclick="sendOTP()">Send OTP →</button>
+      </div>
+      <div id="otpStep2" style="display:none">
+        <div class="fg">
+          <label class="fl">6-Digit Code <span style="text-transform:none;letter-spacing:0;font-weight:400;font-size:11px;color:var(--accent);cursor:pointer" onclick="backToOtpEmail()">← Change email</span></label>
+          <input class="fi otp-big-input" id="otpCode" type="text" maxlength="6" placeholder="000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')verifyOTP()">
+        </div>
+        <div style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:12px">Valid 5 min · <span style="color:var(--accent);cursor:pointer" onclick="sendOTP()">Resend</span></div>
+        <div class="auth-err" id="otpErr"></div>
+        <button class="auth-submit" onclick="verifyOTP()">Verify & Sign In ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CREATE ACCOUNT (3 steps) ── -->
+  <div id="formSignup" style="display:none">
+
+    <!-- Step 1 -->
+    <div id="suStep1">
+      <div class="su-step"><div class="su-step-dot">1</div>Step 1 of 3 — Your Details</div>
+      <div class="fg"><label class="fl">Full Name *</label><input class="fi" id="suName" type="text" placeholder="Srinivas Reddy" autocomplete="name" onkeydown="if(event.key==='Enter')document.getElementById('suUsername').focus()"></div>
+      <div class="fg">
+        <label class="fl">Username</label>
+        <div style="position:relative">
+          <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none">@</span>
+          <input class="fi" id="suUsername" type="text" placeholder="srinivasreddy" style="padding-left:26px" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9._-]/g,'')" onkeydown="if(event.key==='Enter')document.getElementById('suEmail').focus()">
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">Lowercase · numbers · . _ - only</div>
+      </div>
+      <div class="fg"><label class="fl">Email Address *</label><input class="fi" id="suEmail" type="email" placeholder="you@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('suMobile').focus()"></div>
+      <div class="fg">
+        <label class="fl">Mobile Number <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--text3)">optional</span></label>
+        <div style="display:flex;gap:6px">
+          <select class="fi" id="suCC" style="width:105px;flex-shrink:0;padding:11px 8px">
+            <option value="+91">🇮🇳 +91</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+61">🇦🇺 +61</option>
+            <option value="+65">🇸🇬 +65</option>
+            <option value="+971">🇦🇪 +971</option>
+            <option value="+49">🇩🇪 +49</option>
+            <option value="+81">🇯🇵 +81</option>
+          </select>
+          <input class="fi" id="suMobile" type="tel" placeholder="9876543210" style="flex:1" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')document.getElementById('suPass').focus()">
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">Used for SMS OTP (choose on next step)</div>
+      </div>
+      <div class="fg">
+        <label class="fl">Password *</label>
+        <div class="pass-wrap">
+          <input class="fi pass-input" id="suPass" type="password" placeholder="Min. 8 characters" oninput="checkPassStrength(this.value);checkConfirmPass()" onkeydown="if(event.key==='Enter')document.getElementById('suPass2').focus()">
+          <button class="eye-btn" type="button" onclick="togglePass('suPass',this)">
+            <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+          </button>
+        </div>
+        <div id="passBar">
+          <div style="height:3px;border-radius:2px;background:var(--bg4);overflow:hidden"><div id="passFill" style="height:100%;border-radius:2px;transition:width .3s,background .3s;width:0%"></div></div>
+          <div id="passLbl" style="font-size:10px;margin-top:3px"></div>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Confirm Password *</label>
+        <div class="pass-wrap">
+          <input class="fi pass-input" id="suPass2" type="password" placeholder="Repeat your password" oninput="checkConfirmPass()" onkeydown="if(event.key==='Enter')suNext()">
+          <button class="eye-btn" type="button" onclick="togglePass('suPass2',this)">
+            <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+          </button>
+        </div>
+        <div id="passMatchHint" style="display:none;font-size:11px;font-weight:600;margin-top:5px"></div>
+      </div>
+      <div class="auth-err" id="suErr"></div>
+      <button class="auth-submit" onclick="suNext()">Continue →</button>
+    </div>
+
+    <!-- Step 2 -->
+    <div id="suStep2" style="display:none">
+      <div class="su-step"><div class="su-step-dot">2</div>Step 2 of 3 — Verify Your Identity</div>
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:32px;margin-bottom:8px">🔐</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:4px">Choose Verification Method</div>
+        <div style="font-size:12px;color:var(--text2)">We'll send a 6-digit OTP to confirm your account</div>
+      </div>
+      <div class="v-opt selected" id="vOpt_email" onclick="suSelectChannel('email')">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:22px">📧</span>
+          <div><div style="font-size:13px;font-weight:600">Verify via Email</div><div style="font-size:11px;color:var(--text2)" id="vEmailAddr">your@email.com</div></div>
+        </div>
+        <div class="v-radio checked" id="vRadio_email"></div>
+      </div>
+      <div class="v-opt" id="vOpt_mobile" style="display:none" onclick="suSelectChannel('mobile')">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:22px">📱</span>
+          <div><div style="font-size:13px;font-weight:600">Verify via SMS</div><div style="font-size:11px;color:var(--text2)" id="vMobileAddr">+91 XXXXXXXXXX</div></div>
+        </div>
+        <div class="v-radio" id="vRadio_mobile"></div>
+      </div>
+      <div class="auth-err" id="suErr2"></div>
+      <button class="auth-submit" id="suSendBtn" onclick="suSendOTP()">Send OTP →</button>
+      <button type="button" style="width:100%;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;margin-top:10px" onclick="suBack1()">← Back to details</button>
+    </div>
+
+    <!-- Step 3 -->
+    <div id="suStep3" style="display:none">
+      <div class="su-step"><div class="su-step-dot">3</div>Step 3 of 3 — Enter OTP</div>
+      <div style="text-align:center;margin-bottom:18px">
+        <div id="suOtpIcon" style="font-size:32px;margin-bottom:8px">📧</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:4px">OTP Sent!</div>
+        <div style="font-size:12px;color:var(--text2)" id="suOtpTo">Sent to your email</div>
+        <div class="otp-demo-box">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px">Demo OTP</div>
+          <div id="suOtpDemo" style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;letter-spacing:8px;color:var(--accent)">------</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px">
+        <input type="text" maxlength="1" id="sb0" class="otp-box" oninput="sbInput(this,0)" onkeydown="sbKey(event,0)" onpaste="sbPaste(event)">
+        <input type="text" maxlength="1" id="sb1" class="otp-box" oninput="sbInput(this,1)" onkeydown="sbKey(event,1)">
+        <input type="text" maxlength="1" id="sb2" class="otp-box" oninput="sbInput(this,2)" onkeydown="sbKey(event,2)">
+        <input type="text" maxlength="1" id="sb3" class="otp-box" oninput="sbInput(this,3)" onkeydown="sbKey(event,3)">
+        <input type="text" maxlength="1" id="sb4" class="otp-box" oninput="sbInput(this,4)" onkeydown="sbKey(event,4)">
+        <input type="text" maxlength="1" id="sb5" class="otp-box" oninput="sbInput(this,5)" onkeydown="sbKey(event,5)">
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:12px">
+        <span id="suTimer">5:00</span> &nbsp;·&nbsp; <span style="color:var(--accent);cursor:pointer" onclick="suBack2()">Change method</span>
+      </div>
+      <div class="auth-err" id="suErr3"></div>
+      <button class="auth-submit" id="suVerifyBtn" onclick="suVerify()">Create Account ✓</button>
+    </div>
+  </div>
+
+  <div id="otpScreen" style="display:none"></div>
+  <div class="auth-divider" id="authDivider">or</div>
+  <div id="demoBtn"><button class="auth-demo" onclick="demoLogin()">⚡ Continue with Demo Account</button></div>
+  <div class="auth-footer">By signing in you agree to our
+    <span style="color:var(--accent);cursor:pointer" onclick="showTerms()">Terms</span> &amp;
+    <span style="color:var(--accent);cursor:pointer" onclick="showPrivacy()">Privacy Policy</span>
+  </div>
+</div>
+</div>
+
+<!-- APP SHELL -->
+<div class="app-shell" id="appShell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div>
+      <div><div class="logo-text">MJA</div><div class="logo-sub">My Job Applications</div></div>
+    </div>
+    <div class="sb-scroll">
+      <div class="sb-section">
+        <div class="sb-lbl">Main</div>
+        <button class="nav-item active" id="nav_dashboard" onclick="showPage('dashboard')"><svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>Dashboard <span class="nav-badge" id="navBadge">7</span></button>
+        <button class="nav-item" id="nav_analytics" onclick="showPage('analytics')"><svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>Analytics</button>
+        <button class="nav-item" id="nav_workspace" onclick="showPage('workspace')"><svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg>Workspaces</button>
+        <button class="nav-item" id="nav_profile" onclick="showPage('profile')"><svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>Public Profile</button>
+      </div>
+      <div class="sb-section" style="margin-top:6px">
+        <div class="sb-lbl">Account</div>
+        <button class="nav-item" id="nav_settings" onclick="showPage('settings')"><svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>Settings</button>
+        <button class="nav-item" id="nav_about" onclick="showPage('about')"><svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>About MJA</button>
+      </div>
+      <div class="sb-section" style="margin-top:8px">
+        <div class="sb-lbl">Quick Stats</div>
+        <div id="sideStats" style="padding:4px 0"></div>
+      </div>
+    </div>
+    <div class="sb-user" onclick="showPage('settings')">
+      <div class="user-av" id="sidebarAv">DU</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500" id="sidebarName">Demo User</div><div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebarEmail">demo@mja.app</div></div>
+      <span style="color:var(--text3)">›</span>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-area">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="icon-btn" id="mobileMenuBtn" style="display:none" onclick="toggleSidebar()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 2.5h14M1 8h14M1 13.5h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        <div class="topbar-title" id="topTitle">Dashboard</div>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" id="themeBtn" onclick="cycleTheme()" title="Toggle theme"><svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg></button>
+        <button class="icon-btn" onclick="showToast('No new notifications','success')" style="position:relative"><svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg><span style="position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--red);border:2px solid var(--bg2)"></span></button>
+        <button class="btn-primary" id="topAddBtn" onclick="openAddModal()"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Add Application</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="pg_dashboard">
+      <div class="stats-bar" id="statsBar"></div>
+      <div class="toolbar">
+        <div class="search-wrap"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.4"/><path d="M9.5 9.5L13 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><input class="search-input" id="searchQ" placeholder="Search company, role, skills…" oninput="renderDashboard()"></div>
+        <select class="filter-sel" id="fStatus" onchange="renderDashboard()"><option value="">All Status</option><option>Applied</option><option>Screening</option><option>Interview</option><option>Offer</option><option>Rejected</option><option>Ghosted</option></select>
+        <select class="filter-sel" id="fPriority" onchange="renderDashboard()"><option value="">All Priority</option><option>High</option><option>Medium</option><option>Low</option></select>
+        <select class="filter-sel" id="fSort" onchange="renderDashboard()"><option value="new">Newest First</option><option value="old">Oldest First</option><option value="co">Company A–Z</option><option value="st">By Status</option></select>
+        <div class="view-toggle">
+          <button class="view-btn active" id="vKanban" onclick="setView('kanban')" title="Kanban"><svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor"><rect x="0" y="0" width="3.5" height="13" rx="1"/><rect x="4.75" y="0" width="3.5" height="9" rx="1"/><rect x="9.5" y="0" width="3.5" height="11" rx="1"/></svg></button>
+          <button class="view-btn" id="vTable" onclick="setView('table')" title="Table"><svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor"><rect x="0" y="0" width="13" height="3" rx="1"/><rect x="0" y="4" width="13" height="3" rx="1" opacity=".6"/><rect x="0" y="8" width="13" height="3" rx="1" opacity=".35"/></svg></button>
+        </div>
+        <button class="tb-sf" id="sfToolBtn" onclick="openSmartFill()"><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>✨ Smart Fill</button>
+        <button class="tb-export" onclick="exportCSV()"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v8M3 6l3.5 3.5L10 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 10v1.5a.5.5 0 00.5.5h10a.5.5 0 00.5-.5V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Export</button>
+        <button class="tb-clear" id="clearAllBtn" onclick="confirmClearAll()"><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Clear All</button>
+      </div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0">
+        <div id="kanbanView" style="flex:1;overflow:auto"></div>
+        <div id="tableView" style="flex:1;overflow:auto;padding:18px 22px;display:none"></div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="page" id="pg_analytics"><div class="page-body"><div class="an-grid" id="aMetrics"></div><div class="charts-row" id="aCharts"></div></div></div>
+
+    <!-- WORKSPACES -->
+    <div class="page" id="pg_workspace">
+      <div class="page-body">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+          <div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px">Team Workspaces</div><div style="font-size:13px;color:var(--text2);margin-top:3px">Create shared spaces · invite teammates via a 6-character code</div></div>
+          <div style="display:flex;gap:8px"><button class="btn-ghost" onclick="openJoinWs()">🔗 Join with Code</button><button class="btn-primary" onclick="openCreateWs()">+ New Workspace</button></div>
+        </div>
+        <div id="wsPg"></div>
+      </div>
+    </div>
+
+    <!-- PUBLIC PROFILE -->
+    <div class="page" id="pg_profile">
+      <div class="page-body" style="max-width:660px">
+        <div id="pubUrlBanner" style="background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--accent);margin-bottom:16px">🌐 Public URL: <strong>mja.app/profile/user</strong></div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;display:flex;gap:18px;align-items:flex-start">
+          <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;flex-shrink:0" id="pubAv">DU</div>
+          <div style="flex:1"><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px" id="pubName">Demo User</div><div id="pubHandle" style="color:var(--accent);font-size:13px;margin-bottom:5px">@demo</div><div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--text2)"><span><strong style="color:var(--text);font-family:'Syne',sans-serif" id="pubCount">0</strong> Public Apps</span></div></div>
+        </div>
+        <div style="margin-bottom:16px"><div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:10px">Skills</div><div style="display:flex;flex-wrap:wrap;gap:7px" id="pubSkills"></div></div>
+        <div><div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:10px">Public Applications</div><div id="pubApps"></div></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="pg_settings">
+      <div class="page-body">
+        <div class="s-layout">
+          <div class="s-nav">
+            <button class="s-tab active" id="st_account"       onclick="showSettingsPanel('account')"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>Account</button>
+            <button class="s-tab" id="st_appearance"    onclick="showSettingsPanel('appearance')"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zm1 14a1 1 0 100-2 1 1 0 000 2zm5-1.757l4.9-4.9a2 2 0 000-2.828L13.485 5.1a2 2 0 00-2.828 0L10 5.757v8.486zM16 18H9.071l6-6H16a2 2 0 012 2v2a2 2 0 01-2 2z" clip-rule="evenodd"/></svg>Appearance</button>
+            <button class="s-tab" id="st_notifications" onclick="showSettingsPanel('notifications')"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>Notifications</button>
+            <button class="s-tab" id="st_privacy"       onclick="showSettingsPanel('privacy')"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>Privacy</button>
+            <button class="s-tab" id="st_data"          onclick="showSettingsPanel('data')"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3zM3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7zM17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"/></svg>Data &amp; Export</button>
+            <div style="border-top:1px solid var(--border);margin:8px 0;padding-top:8px">
+              <button class="s-tab" onclick="doSignOut()" style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>Sign Out</button>
+            </div>
+          </div>
+          <div>
+            <!-- Account -->
+            <div class="s-panel active" id="sp_account">
+              <div class="s-card"><div class="s-card-t">Profile</div><div class="s-card-d">Your personal information</div>
+                <div class="prof-av-row"><div class="av-lg" id="settingsAv">DU</div><div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px" id="settingsName">Demo User</div><div style="font-size:12px;color:var(--text2)" id="settingsEmail">demo@mja.app</div></div></div>
+                <div class="form-grid">
+                  <div class="field"><div class="field-label">Full Name</div><input class="field-input" id="sNameInp" type="text"></div>
+                  <div class="field"><div class="field-label">Username</div><input class="field-input" id="sUnInp" type="text"></div>
+                  <div class="field"><div class="field-label">Email</div><input class="field-input" id="sEmailInp" type="email"></div>
+                  <div class="field"><div class="field-label">Phone</div><input class="field-input" type="tel" placeholder="+91 9999 999 999"></div>
+                  <div class="field form-full"><div class="field-label">Headline</div><input class="field-input" type="text" placeholder="Senior Frontend Engineer · Open to FAANG &amp; startups"></div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn-primary" onclick="saveAccountSettings()">Save Changes</button></div>
+              </div>
+              <div class="s-card"><div class="s-card-t">Change Password</div><div class="s-card-d">Update your login credentials</div>
+                <div class="form-grid">
+                  <div class="field form-full"><div class="field-label">Current Password</div><input class="field-input" type="password" placeholder="••••••••"></div>
+                  <div class="field"><div class="field-label">New Password</div><input class="field-input" type="password" placeholder="••••••••"></div>
+                  <div class="field"><div class="field-label">Confirm</div><input class="field-input" type="password" placeholder="••••••••"></div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn-primary" onclick="showToast('Password updated!','success')">Update Password</button></div>
+              </div>
+              <div class="s-card" style="border-color:rgba(255,107,107,.25)"><div class="s-card-t" style="color:var(--red)">Danger Zone</div><div class="s-card-d">Irreversible — proceed with caution.</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn-ghost btn-danger" onclick="confirmClearAll()">Clear All Applications</button><button class="btn-ghost btn-danger" onclick="showToast('Deletion email sent.','success')">Delete Account</button></div>
+              </div>
+            </div>
+            <!-- Appearance -->
+            <div class="s-panel" id="sp_appearance">
+              <div class="s-card"><div class="s-card-t">Theme</div><div class="s-card-d">Choose how MJA looks</div>
+                <div class="theme-opts">
+                  <div class="theme-opt active" id="th_dark" onclick="setTheme('dark')"><div class="theme-prev" style="background:#111118"><div class="theme-prev-sb" style="background:#1a1a24"></div><div class="theme-prev-mn" style="background:#0a0a0f"></div></div><div style="font-size:13px;font-weight:600">Dark</div></div>
+                  <div class="theme-opt" id="th_light" onclick="setTheme('light')"><div class="theme-prev" style="background:#f2f2f7"><div class="theme-prev-sb" style="background:#fff"></div><div class="theme-prev-mn" style="background:#f0f0f6"></div></div><div style="font-size:13px;font-weight:600">Light</div></div>
+                  <div class="theme-opt" id="th_system" onclick="setTheme('system')"><div class="theme-prev" style="background:linear-gradient(135deg,#111118 50%,#f2f2f7 50%)"><div class="theme-prev-sb" style="background:linear-gradient(135deg,#1a1a24 50%,#fff 50%)"></div><div class="theme-prev-mn" style="background:linear-gradient(135deg,#0a0a0f 50%,#f0f0f6 50%)"></div></div><div style="font-size:13px;font-weight:600">System</div></div>
+                </div>
+              </div>
+              <div class="s-card"><div class="s-card-t">Display</div><div class="s-card-d">Adjust Kanban presentation</div>
+                <div class="s-row"><div><div class="s-row-l">Compact Cards</div><div class="s-row-d">Show less detail per card</div></div><label class="toggle"><input type="checkbox" id="compactCards" onchange="renderDashboard()"><div class="tg-track"></div><div class="tg-thumb"></div></label></div>
+                <div class="s-row"><div><div class="s-row-l">Show Salary</div><div class="s-row-d">Display salary on Kanban cards</div></div><label class="toggle"><input type="checkbox" id="showSalary" checked><div class="tg-track"></div><div class="tg-thumb"></div></label></div>
+              </div>
+            </div>
+            <!-- Notifications -->
+            <div class="s-panel" id="sp_notifications">
+              <div class="s-card"><div class="s-card-t">Reminders</div><div class="s-card-d">Get notified about follow-ups</div>
+                <div class="s-row"><div><div class="s-row-l">Follow-up Reminders</div></div><label class="toggle"><input type="checkbox" checked><div class="tg-track"></div><div class="tg-thumb"></div></label></div>
+                <div class="s-row"><div><div class="s-row-l">Interview Alerts</div></div><label class="toggle"><input type="checkbox" checked><div class="tg-track"></div><div class="tg-thumb"></div></label></div>
+                <div class="s-row"><div><div class="s-row-l">Weekly Digest</div></div><label class="toggle"><input type="checkbox"><div class="tg-track"></div><div class="tg-thumb"></div></label></div>
+              </div>
+            </div>
+            <!-- Privacy -->
+            <div class="s-panel" id="sp_privacy">
+              <div class="s-card"><div class="s-card-t">Public Profile</div><div class="s-card-d" id="privDesc">Control what's visible</div>
+                <div class="s-row"><div><div class="s-row-l">Profile Active</div></div><label class="toggle"><input type="checkbox" checked><div class="tg-track"></div><div class="tg-thumb"></div></label></div>
+                <div class="s-row"><div><div class="s-row-l">Show Company Names</div></div><label class="toggle"><input type="checkbox" checked><div class="tg-track"></div><div class="tg-thumb"></div></label></div>
+                <div class="s-row"><div><div class="s-row-l">Show Salary Range</div></div><label class="toggle"><input type="checkbox"><div class="tg-track"></div><div class="tg-thumb"></div></label></div>
+              </div>
+              <div class="s-card"><div class="s-card-t">Legal</div><div class="s-card-d">Review our policies</div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px"><button class="btn-ghost" onclick="showTerms()">Terms of Service</button><button class="btn-ghost" onclick="showPrivacy()">Privacy Policy</button></div></div>
+            </div>
+            <!-- Data -->
+            <div class="s-panel" id="sp_data">
+              <div class="s-card"><div class="s-card-t">Export Data</div><div class="s-card-d">Download all your applications</div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn-primary" onclick="exportCSV()">Export as CSV</button><button class="btn-ghost" onclick="showToast('JSON export coming soon!','success')">Export as JSON</button></div></div>
+              <div class="s-card"><div class="s-card-t">Import Data</div><div class="s-card-d">Bring in from other tools</div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn-ghost" onclick="showToast('CSV import coming soon!','success')">Import CSV</button><button class="btn-ghost" onclick="showToast('LinkedIn import coming soon!','success')">From LinkedIn</button></div></div>
+              <div class="s-card" style="border-color:rgba(255,107,107,.2)"><div class="s-card-t" style="color:var(--red)">Danger Zone</div><div class="s-card-d">Permanently delete all data.</div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn-ghost btn-danger" onclick="confirmClearAll()">Clear All Applications</button><button class="btn-ghost btn-danger" onclick="showToast('Account deletion email sent.','success')">Delete Account</button></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABOUT -->
+    <div class="page" id="pg_about">
+      <div class="page-body" style="max-width:720px">
+        <div class="about-hero">
+          <div class="about-logo"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px">MJA — My Job Applications</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:4px">Version 4.0.0 · Built for job seekers everywhere</div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-top:8px">A full-featured job application tracker — stay organised, prepared, and confident throughout your job search.</div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+              <button class="btn-primary" onclick="startTour()" style="font-size:12px;padding:7px 14px">🗺️ Guided Tour</button>
+              <button class="btn-ghost" onclick="showTerms()" style="font-size:12px">Terms</button>
+              <button class="btn-ghost" onclick="showPrivacy()" style="font-size:12px">Privacy</button>
+            </div>
+          </div>
+        </div>
+        <div class="about-grid">
+          <div class="about-card"><div style="font-size:22px;margin-bottom:8px">📋</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px">Track Everything</div><div style="font-size:12px;color:var(--text2);line-height:1.6">Company, role, salary, status, skills — all organised.</div></div>
+          <div class="about-card"><div style="font-size:22px;margin-bottom:8px">✨</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px">Smart Fill</div><div style="font-size:12px;color:var(--text2);line-height:1.6">Paste a JD and auto-extract company, role, salary &amp; skills.</div></div>
+          <div class="about-card"><div style="font-size:22px;margin-bottom:8px">👥</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px">Workspaces</div><div style="font-size:12px;color:var(--text2);line-height:1.6">Create team workspaces with invite codes.</div></div>
+        </div>
+        <div class="s-card" style="margin-bottom:12px"><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:13px">All Features</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>Kanban board &amp; Table view with filters</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>✨ Smart Fill — paste JD to auto-fill all fields</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>🗑️ Clear All with confirmation dialog</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>🗺️ Interactive 10-step guided tour</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>👤 3-step account creation with OTP verification</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>📱 Email &amp; SMS OTP — 6-box animated input</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>🔑 Password + Email OTP sign-in methods</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>👁 Eye icon to show/hide password everywhere</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>🔐 Live password strength meter</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>✅ Real-time confirm password validation</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>👥 Team workspaces with invite codes &amp; member management</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>📈 Analytics — response rate, status &amp; source charts</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>🌐 Public profile with shareable URL</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>🎨 Dark / Light / System theme</div>
+          <div class="feat-item"><div class="feat-chk">✓</div>📥 CSV export · Terms &amp; Privacy · Mobile responsive</div>
+        </div>
+        <div class="s-card"><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:13px">Changelog</div>
+          <div class="cl-item"><span class="cl-ver">v4.0.0</span><span class="cl-date">March 2025</span><div class="cl-note">Full rebuild from scratch. Zero null-style errors. Safe DOM helper layer ($, setDisplay, setText etc). All JS in head, no inline function calls before DOM ready. 3-step signup fully working: confirm password live feedback, OTP 6-box input with auto-verify, account creates and launches app.</div></div>
+          <div class="cl-item"><span class="cl-ver">v3.0.0</span><span class="cl-date">February 2025</span><div class="cl-note">OTP auth, dynamic workspaces, Smart Fill, guided tour.</div></div>
+          <div class="cl-item"><span class="cl-ver">v1.0.0</span><span class="cl-date">January 2025</span><div class="cl-note">Prototype — Kanban, analytics, themes, CSV export.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT MODAL -->
+<div class="modal-overlay" id="appModal">
+  <div class="modal">
+    <div class="modal-header"><div><div class="modal-title" id="mTitle">Add Application</div><div class="modal-sub" id="mSub">Fill in details or use Smart Fill ✨</div></div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-grid">
+      <div class="field"><div class="field-label">Company *</div><input class="field-input" id="f_co" placeholder="Google, Razorpay, Stripe…"></div>
+      <div class="field"><div class="field-label">Job Role *</div><input class="field-input" id="f_role" placeholder="Frontend Engineer, SDE-2…"></div>
+      <div class="field"><div class="field-label">Status</div><select class="field-input" id="f_status"><option>Applied</option><option>Screening</option><option>Interview</option><option>Offer</option><option>Rejected</option><option>Ghosted</option></select></div>
+      <div class="field"><div class="field-label">Priority</div><select class="field-input" id="f_priority"><option>High</option><option>Medium</option><option>Low</option></select></div>
+      <div class="field"><div class="field-label">Applied Date</div><input class="field-input" id="f_date" type="date"></div>
+      <div class="field"><div class="field-label">Salary Range</div><input class="field-input" id="f_salary" placeholder="₹12–18 LPA or $90k–120k"></div>
+      <div class="field"><div class="field-label">Location</div><input class="field-input" id="f_location" placeholder="Bengaluru / Remote"></div>
+      <div class="field"><div class="field-label">Work Type</div><select class="field-input" id="f_worktype"><option>Remote</option><option>Hybrid</option><option>On-site</option></select></div>
+      <div class="field"><div class="field-label">Source</div><select class="field-input" id="f_src" onchange="toggleOtherSrc(this.value)"><option>LinkedIn</option><option>Naukri</option><option>Indeed</option><option>Glassdoor</option><option>Company Website</option><option>Referral</option><option>AngelList</option><option>Twitter/X</option><option>Internshala</option><option>Wellfound</option><option>Campus</option><option>WhatsApp</option><option>Other</option></select></div>
+      <div class="field" id="f_src_other_wrap" style="display:none"><div class="field-label">↳ Specify Source</div><input class="field-input" id="f_src_other" placeholder="e.g. Instahyre, Campus placement…" autocomplete="off"></div>
+      <div class="field"><div class="field-label">Job URL</div><input class="field-input" id="f_url" type="url" placeholder="https://company.com/jobs/…"></div>
+      <div class="field"><div class="field-label">Contact Name</div><input class="field-input" id="f_contact" placeholder="Recruiter / Hiring Manager"></div>
+      <div class="field"><div class="field-label">Resume Version</div><input class="field-input" id="f_resume" placeholder="v3_sde2.pdf"></div>
+      <div class="field"><div class="field-label">Next Action Date</div><input class="field-input" id="f_nextdate" type="date"></div>
+      <div class="field form-full"><div class="field-label">Skills (comma-separated)</div><input class="field-input" id="f_skills" placeholder="React, TypeScript, Node.js…"></div>
+      <div class="field form-full"><div class="field-label">📚 What to Learn / Prepare</div><textarea class="field-input textarea" id="f_learn" rows="2" placeholder="Topics to study, LeetCode patterns, company-specific prep…"></textarea></div>
+      <div class="field form-full"><div class="field-label">Interview Notes</div><textarea class="field-input textarea" id="f_notes" rows="2" placeholder="Round 1 DSA on Mar 10, feedback, next steps…"></textarea></div>
+      <div class="field form-full"><div class="field-label">Next Action</div><input class="field-input" id="f_next" placeholder="Follow up on March 25, prepare for technical round…"></div>
+      <div class="field form-full"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2)"><input type="checkbox" id="f_public" style="accent-color:var(--accent);width:15px;height:15px"> Show on my public profile</label></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost btn-danger" id="mDeleteBtn" style="display:none;margin-right:auto" onclick="deleteApp()">Delete</button>
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveApp()">Save Application</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+</body>
+</html>
